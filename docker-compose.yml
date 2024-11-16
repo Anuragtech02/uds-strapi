@@ -41,7 +41,7 @@ services:
       - DATABASE_PASSWORD=your-password
       - DATABASE_SSL=true
       - DATABASE_SSL_CA=/app/ssl/dbcertificate.pem
-      - DATABASE_SSL_REJECT_UNAUTHORIZED=true
+      - DATABASE_SSL_REJECT_UNAUTHORIZED=false
       - DATABASE_SCHEMA=public
       # Redis settings
       - REDIS_HOST=redis
