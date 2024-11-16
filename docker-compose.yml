@@ -40,7 +40,7 @@ services:
       - DATABASE_USERNAME=your-username
       - DATABASE_PASSWORD=your-password
       - DATABASE_SSL=true
-      - DATABASE_SSL_CA=/app/ssl/certificate.pem
+      - DATABASE_SSL_CA=/app/ssl/dbcertificate.pem
       - DATABASE_SSL_REJECT_UNAUTHORIZED=true
       - DATABASE_SCHEMA=public
       # Redis settings
@@ -80,7 +80,7 @@ services:
       - DATABASE_USERNAME=your-username
       - DATABASE_PASSWORD=your-password
       - DATABASE_SSL=true
-      - DATABASE_SSL_CA=/app/ssl/certificate.pem
+      - DATABASE_SSL_CA=/app/ssl/dbcertificate.pem
       - DATABASE_SSL_REJECT_UNAUTHORIZED=true
       - DATABASE_SCHEMA=public
       # Redis settings
