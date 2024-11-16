@@ -1,0 +1,24 @@
+{
+  "collectionName": "components_report_price_items",
+  "info": {
+    "displayName": "Price Item",
+    "icon": "priceTag"
+  },
+  "options": {},
+  "attributes": {
+    "currency": {
+      "type": "enumeration",
+      "enum": [
+        "USD",
+        "INR"
+      ],
+      "default": "USD",
+      "required": true
+    },
+    "amount": {
+      "type": "decimal",
+      "required": true,
+      "default": 3999
+    }
+  }
+}

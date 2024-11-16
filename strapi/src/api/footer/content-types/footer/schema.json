@@ -1,0 +1,44 @@
+{
+  "kind": "singleType",
+  "collectionName": "footers",
+  "info": {
+    "singularName": "footer",
+    "pluralName": "footers",
+    "displayName": "Footer",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "footerCTA": {
+      "displayName": "Footer CTA",
+      "type": "component",
+      "repeatable": false,
+      "component": "footer.footer-cta",
+      "required": true
+    },
+    "companyInfo": {
+      "displayName": "Company Info",
+      "type": "component",
+      "repeatable": false,
+      "component": "footer.company-info",
+      "required": true
+    },
+    "phoneNumber": {
+      "type": "string",
+      "required": true
+    },
+    "email": {
+      "type": "email",
+      "required": true
+    },
+    "copyRightText": {
+      "type": "string"
+    },
+    "footerScripts": {
+      "type": "text"
+    }
+  }
+}

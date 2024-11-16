@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "payments",
+  "info": {
+    "singularName": "payment",
+    "pluralName": "payments",
+    "displayName": "Payment"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "paymentId": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "order": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::order.order",
+      "inversedBy": "payment"
+    },
+    "provider": {
+      "type": "enumeration",
+      "enum": [
+        "RAZORPAY"
+      ],
+      "default": "RAZORPAY",
+      "required": false
+    },
+    "fullfillmentStatus": {
+      "type": "enumeration",
+      "enum": [
+        "INITIATED",
+        "PENDING",
+        "SUCCESS",
+        "CANCEL",
+        "REFUND"
+      ],
+      "required": true,
+      "default": "INITIATED"
+    },
+    "amount": {
+      "type": "component",
+      "repeatable": false,
+      "component": "report.price-item",
+      "required": true
+    }
+  }
+}

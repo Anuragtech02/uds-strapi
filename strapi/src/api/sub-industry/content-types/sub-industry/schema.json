@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "sub_industries",
+  "info": {
+    "singularName": "sub-industry",
+    "pluralName": "sub-industries",
+    "displayName": "Sub Industry"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "name": {
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        },
+        "translate": {
+          "translate": "copy"
+        }
+      },
+      "type": "string",
+      "required": true
+    },
+    "industry": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::industry.industry",
+      "pluginOptions": {
+        "translate": {
+          "translate": "copy"
+        }
+      },
+      "inversedBy": "sub_industries"
+    },
+    "slug": {
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    }
+  }
+}

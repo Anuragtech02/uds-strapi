@@ -1,0 +1,26 @@
+{
+  "collectionName": "components_about_page_v_ision_mission_cards",
+  "info": {
+    "displayName": "VIsion Mission Card",
+    "icon": "grid"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "string",
+      "required": true
+    },
+    "image": {
+      "allowedTypes": [
+        "images"
+      ],
+      "type": "media",
+      "multiple": false,
+      "required": true
+    }
+  }
+}

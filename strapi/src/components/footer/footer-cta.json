@@ -1,0 +1,24 @@
+{
+  "collectionName": "components_footer_footer_ctas",
+  "info": {
+    "displayName": "Footer CTA",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text",
+      "required": true
+    },
+    "ctaButton": {
+      "type": "component",
+      "repeatable": false,
+      "component": "utils.navigation-link",
+      "required": true
+    }
+  }
+}

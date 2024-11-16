@@ -1,0 +1,38 @@
+{
+  "collectionName": "components_report_product_variants",
+  "info": {
+    "displayName": "Product Variant",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "pluginOptions": {
+        "translate": {
+          "translate": "copy"
+        }
+      }
+    },
+    "description": {
+      "type": "customField",
+      "options": {
+        "preset": "toolbar"
+      },
+      "required": true,
+      "pluginOptions": {
+        "translate": {
+          "translate": "copy"
+        }
+      },
+      "customField": "plugin::ckeditor5.CKEditor"
+    },
+    "price": {
+      "displayName": "Price Item",
+      "type": "component",
+      "repeatable": false,
+      "component": "report.price-item"
+    }
+  }
+}

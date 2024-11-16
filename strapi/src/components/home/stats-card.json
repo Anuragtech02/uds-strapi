@@ -1,0 +1,29 @@
+{
+  "collectionName": "components_home_stats_cards",
+  "info": {
+    "displayName": "Stats Card"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "countFrom": {
+      "type": "integer",
+      "required": true
+    },
+    "countTo": {
+      "type": "integer",
+      "required": true
+    },
+    "icon": {
+      "allowedTypes": [
+        "images"
+      ],
+      "type": "media",
+      "multiple": false,
+      "required": true
+    }
+  }
+}

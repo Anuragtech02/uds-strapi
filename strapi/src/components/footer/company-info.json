@@ -1,0 +1,22 @@
+{
+  "collectionName": "components_footer_company_infos",
+  "info": {
+    "displayName": "Company Info",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "companyDescription": {
+      "type": "text",
+      "required": true
+    },
+    "logo": {
+      "allowedTypes": [
+        "images"
+      ],
+      "type": "media",
+      "multiple": false,
+      "required": true
+    }
+  }
+}

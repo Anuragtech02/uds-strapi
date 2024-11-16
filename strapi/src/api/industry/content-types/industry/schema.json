@@ -1,0 +1,47 @@
+{
+  "kind": "collectionType",
+  "collectionName": "industries",
+  "info": {
+    "singularName": "industry",
+    "pluralName": "industries",
+    "displayName": "Industry",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string"
+    },
+    "blogs": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::blog.blog",
+      "mappedBy": "industries"
+    },
+    "news_articles": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::news-article.news-article",
+      "mappedBy": "industries"
+    },
+    "reports": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::report.report",
+      "mappedBy": "industry"
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name"
+    },
+    "sub_industries": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::sub-industry.sub-industry",
+      "mappedBy": "industry"
+    }
+  }
+}

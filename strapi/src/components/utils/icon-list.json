@@ -1,0 +1,25 @@
+{
+  "collectionName": "components_utils_icon_lists",
+  "info": {
+    "displayName": "Icon List",
+    "icon": "bulletList"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "icon": {
+      "allowedTypes": [
+        "images"
+      ],
+      "type": "media",
+      "multiple": false,
+      "required": true
+    },
+    "link": {
+      "type": "string"
+    }
+  }
+}

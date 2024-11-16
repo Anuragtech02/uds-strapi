@@ -1,0 +1,29 @@
+{
+  "collectionName": "components_utils_cta_banners",
+  "info": {
+    "displayName": "CTA Banner",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "ctaButton": {
+      "type": "component",
+      "repeatable": false,
+      "component": "utils.navigation-link",
+      "required": true
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "Type-1",
+        "Type-2",
+        "Type-3"
+      ],
+      "default": "Type-1",
+      "required": true
+    }
+  }
+}

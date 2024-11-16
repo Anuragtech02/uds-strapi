@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - --api.insecure=true
+      - --providers.docker
+      - --entrypoints.web.address=:80
+    ports:
+      - "80:80"
+      - "8080:8080" # For Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml
+
+  strapi1:
+    build:
+      context: ./strapi
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./strapi:/app
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.strapi1.rule=Host(`yourdomain.com`)"
+      - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
+    depends_on:
+      - traefik
+
+  strapi2:
+    build:
+      context: ./strapi
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./strapi:/app
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.strapi2.rule=Host(`yourdomain.com`)"
+      - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
+    depends_on:
+      - traefik

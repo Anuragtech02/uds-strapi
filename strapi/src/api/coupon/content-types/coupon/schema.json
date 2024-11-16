@@ -1,0 +1,74 @@
+{
+  "kind": "collectionType",
+  "collectionName": "coupons",
+  "info": {
+    "singularName": "coupon",
+    "pluralName": "coupons",
+    "displayName": "Coupon"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "couponCode": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "discountType": {
+      "type": "enumeration",
+      "enum": [
+        "AMOUNT",
+        "PERCENTAGE"
+      ]
+    },
+    "discountValue": {
+      "type": "decimal",
+      "required": true,
+      "min": 0
+    },
+    "maxDiscountAmount": {
+      "type": "decimal",
+      "required": true,
+      "min": 0
+    },
+    "validForReports": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::report.report",
+      "inversedBy": "coupons"
+    },
+    "validForUsers": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "coupons"
+    },
+    "expiryDate": {
+      "type": "datetime",
+      "required": true
+    },
+    "minCartValue": {
+      "type": "decimal",
+      "default": 0,
+      "min": 0
+    },
+    "usageLimit": {
+      "type": "integer",
+      "min": 0,
+      "required": false
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "required": true
+    },
+    "orders": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::order.order",
+      "mappedBy": "coupon"
+    }
+  }
+}

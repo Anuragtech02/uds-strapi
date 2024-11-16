@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "enquiry_form_submissions",
+  "info": {
+    "singularName": "enquiry-form-submission",
+    "pluralName": "enquiry-form-submissions",
+    "displayName": "Enquiry Form Submission"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "fullName": {
+      "type": "string",
+      "required": true
+    },
+    "businessEmail": {
+      "type": "email",
+      "required": true
+    },
+    "message": {
+      "type": "text",
+      "required": true
+    },
+    "report": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::report.report",
+      "inversedBy": "enquiry_form_submissions"
+    },
+    "mobileNumber": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string",
+      "required": true
+    }
+  }
+}
