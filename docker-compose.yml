@@ -10,31 +10,59 @@ services:
       - --entrypoints.web.address=:80
     ports:
       - "80:80"
-      - "8080:8080"  # Traefik dashboard
+      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - app-network
 
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"  # Default Redis port
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
   strapi1:
     build:
       context: ./strapi
     environment:
-      - NODE_ENV=development  # Changed to development for easier debugging
+      - NODE_ENV=development
+      # Database settings
+      - DATABASE_CLIENT=postgres
       - DATABASE_HOST=your-postgres-host
       - DATABASE_PORT=5432
       - DATABASE_NAME=your-db-name
       - DATABASE_USERNAME=your-username
       - DATABASE_PASSWORD=your-password
       - DATABASE_SSL=true
+      - DATABASE_SSL_CA=/app/ssl/certificate.pem
+      - DATABASE_SSL_REJECT_UNAUTHORIZED=true
+      - DATABASE_SCHEMA=public
+      # Redis settings
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_USERNAME=default
+      - REDIS_URL=redis://${REDIS_USERNAME}:${REDIS_PASSWORD}@redis:6379
+      # Connection pool settings
+      - DATABASE_POOL_MIN=2
+      - DATABASE_POOL_MAX=10
+      - DATABASE_CONNECTION_TIMEOUT=60000
     volumes:
       - strapi1_data:/app/public/uploads
+      - ./ssl:/app/ssl:ro
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
       - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
     depends_on:
       - traefik
+      - redis
     networks:
       - app-network
     restart: unless-stopped
@@ -43,21 +71,38 @@ services:
     build:
       context: ./strapi
     environment:
-      - NODE_ENV=development  # Changed to development for easier debugging
+      - NODE_ENV=development
+      # Database settings
+      - DATABASE_CLIENT=postgres
       - DATABASE_HOST=your-postgres-host
       - DATABASE_PORT=5432
       - DATABASE_NAME=your-db-name
       - DATABASE_USERNAME=your-username
       - DATABASE_PASSWORD=your-password
       - DATABASE_SSL=true
+      - DATABASE_SSL_CA=/app/ssl/certificate.pem
+      - DATABASE_SSL_REJECT_UNAUTHORIZED=true
+      - DATABASE_SCHEMA=public
+      # Redis settings
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_USERNAME=default
+      - REDIS_URL=redis://${REDIS_USERNAME}:${REDIS_PASSWORD}@redis:6379
+      # Connection pool settings
+      - DATABASE_POOL_MIN=2
+      - DATABASE_POOL_MAX=10
+      - DATABASE_CONNECTION_TIMEOUT=60000
     volumes:
-      - strapi2_data:/app/public/uploads
+      - strapi1_data:/app/public/uploads
+      - ./ssl:/app/ssl:ro
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
       - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
     depends_on:
       - traefik
+      - redis
     networks:
       - app-network
     restart: unless-stopped
@@ -69,3 +114,4 @@ networks:
 volumes:
   strapi1_data:
   strapi2_data:
+  redis_data:
