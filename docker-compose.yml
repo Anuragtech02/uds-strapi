@@ -5,14 +5,14 @@ services:
     image: traefik:v2.10
     command:
       - --api.insecure=true
-      - --providers.docker
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
     ports:
       - "80:80"
       - "8080:8080"  # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./traefik/traefik.yml:/etc/traefik/traefik.yml
     networks:
       - app-network
 
@@ -20,7 +20,7 @@ services:
     build:
       context: ./strapi
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development  # Changed to development for easier debugging
       - DATABASE_HOST=your-postgres-host
       - DATABASE_PORT=5432
       - DATABASE_NAME=your-db-name
@@ -28,10 +28,10 @@ services:
       - DATABASE_PASSWORD=your-password
       - DATABASE_SSL=true
     volumes:
-      - strapi1_data:/app/public/uploads  # Only mount uploads directory
+      - strapi1_data:/app/public/uploads
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.strapi1.rule=Host(`yourdomain.com`)"
+      - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
       - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
     depends_on:
       - traefik
@@ -43,7 +43,7 @@ services:
     build:
       context: ./strapi
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development  # Changed to development for easier debugging
       - DATABASE_HOST=your-postgres-host
       - DATABASE_PORT=5432
       - DATABASE_NAME=your-db-name
@@ -51,10 +51,10 @@ services:
       - DATABASE_PASSWORD=your-password
       - DATABASE_SSL=true
     volumes:
-      - strapi2_data:/app/public/uploads  # Only mount uploads directory
+      - strapi2_data:/app/public/uploads
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.strapi2.rule=Host(`yourdomain.com`)"
+      - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
       - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
     depends_on:
       - traefik
