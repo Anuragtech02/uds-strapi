@@ -9,35 +9,63 @@ services:
       - --entrypoints.web.address=:80
     ports:
       - "80:80"
-      - "8080:8080" # For Traefik dashboard
+      - "8080:8080"  # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml
+    networks:
+      - app-network
 
   strapi1:
     build:
       context: ./strapi
     environment:
       - NODE_ENV=production
+      - DATABASE_HOST=your-postgres-host
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=your-db-name
+      - DATABASE_USERNAME=your-username
+      - DATABASE_PASSWORD=your-password
+      - DATABASE_SSL=true
     volumes:
-      - ./strapi:/app
+      - strapi1_data:/app/public/uploads  # Only mount uploads directory
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.strapi1.rule=Host(`yourdomain.com`)"
       - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
     depends_on:
       - traefik
+    networks:
+      - app-network
+    restart: unless-stopped
 
   strapi2:
     build:
       context: ./strapi
     environment:
       - NODE_ENV=production
+      - DATABASE_HOST=your-postgres-host
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=your-db-name
+      - DATABASE_USERNAME=your-username
+      - DATABASE_PASSWORD=your-password
+      - DATABASE_SSL=true
     volumes:
-      - ./strapi:/app
+      - strapi2_data:/app/public/uploads  # Only mount uploads directory
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.strapi2.rule=Host(`yourdomain.com`)"
       - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
     depends_on:
       - traefik
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  strapi1_data:
+  strapi2_data:
