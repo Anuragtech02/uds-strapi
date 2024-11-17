@@ -9,7 +9,7 @@ services:
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=app-network
       - --entrypoints.web.address=:80
-      - --entrypoints.dashboard.address=:8080
+      - --entrypoints.traefik.address=:8080
     ports:
       - "80:80"
       - "8080:8080"
@@ -19,14 +19,9 @@ services:
       - app-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=PathPrefix(`/api`) || PathPrefix(`/dashboard`)"
-      - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.entrypoints=dashboard"
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:8080/api/version"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.api.service=api@internal"
+      - "traefik.http.routers.api.entrypoints=traefik"
     restart: unless-stopped
 
   redis:
@@ -34,14 +29,9 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD}
     networks:
       - app-network
-    restart: unless-stopped
     volumes:
       - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    restart: unless-stopped
 
   strapi1:
     build:
@@ -49,12 +39,20 @@ services:
     env_file: 
       - ./strapi/.env
     # environment:
-      # - NODE_ENV=development
-      # - DATABASE_CLIENT=postgres
-      # - DATABASE_SSL=true
-      # - REDIS_HOST=redis
-      # - REDIS_PORT=6379
-      # - REDIS_PASSWORD=${REDIS_PASSWORD}
+    #   - NODE_ENV=development
+    #   - HOST=0.0.0.0
+    #   - PORT=1337
+    #   - DATABASE_CLIENT=postgres
+    #   - DATABASE_HOST=${DATABASE_HOST}
+    #   - DATABASE_PORT=${DATABASE_PORT}
+    #   - DATABASE_NAME=${DATABASE_NAME}
+    #   - DATABASE_USERNAME=${DATABASE_USERNAME}
+    #   - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+    #   - DATABASE_SSL=true
+    #   - DATABASE_SSL_REJECT_UNAUTHORIZED=false
+    #   - REDIS_HOST=redis
+    #   - REDIS_PORT=6379
+    #   - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - ./strapi:/app
       - /app/node_modules
@@ -65,18 +63,11 @@ services:
       - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
       - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
     depends_on:
-      traefik:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - traefik
+      - redis
     networks:
       - app-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:1337/_health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   strapi2:
     build:
@@ -84,12 +75,20 @@ services:
     env_file: 
       - ./strapi/.env
     # environment:
-    #   - NODE_ENV=development
-    #   - DATABASE_CLIENT=postgres
-    #   - DATABASE_SSL=true
-    #   - REDIS_HOST=redis
-    #   - REDIS_PORT=6379
-    #   - REDIS_PASSWORD=${REDIS_PASSWORD}
+      # - NODE_ENV=development
+      # - HOST=0.0.0.0
+      # - PORT=1337
+      # - DATABASE_CLIENT=postgres
+      # - DATABASE_HOST=${DATABASE_HOST}
+      # - DATABASE_PORT=${DATABASE_PORT}
+      # - DATABASE_NAME=${DATABASE_NAME}
+      # - DATABASE_USERNAME=${DATABASE_USERNAME}
+      # - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      # - DATABASE_SSL=true
+      # - DATABASE_SSL_REJECT_UNAUTHORIZED=false
+      # - REDIS_HOST=redis
+      # - REDIS_PORT=6379
+      # - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - ./strapi:/app
       - /app/node_modules
@@ -100,18 +99,11 @@ services:
       - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
       - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
     depends_on:
-      traefik:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - traefik
+      - redis
     networks:
       - app-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:1337/_health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
 networks:
   app-network:
