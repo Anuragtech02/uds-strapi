@@ -2,7 +2,7 @@ services:
   traefik:
     image: traefik:v2.10
     command:
-      - --log.level=INFO
+      - --log.level=DEBUG  # Changed to DEBUG for better troubleshooting
       - --api.insecure=true
       - --api.dashboard=true
       - --providers.docker=true
@@ -63,21 +63,9 @@ services:
       - ./ssl:/app/ssl:ro
     labels:
       - "traefik.enable=true"
-      # Admin router - higher priority for admin path
-      - "traefik.http.routers.strapi1-admin.rule=PathPrefix(`/admin`)"
-      - "traefik.http.routers.strapi1-admin.priority=100"
-      - "traefik.http.routers.strapi1-admin.entrypoints=web"
-      - "traefik.http.services.strapi1-admin.loadbalancer.server.port=1337"
-      # API router
-      - "traefik.http.routers.strapi1-api.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.strapi1-api.priority=90"
-      - "traefik.http.routers.strapi1-api.entrypoints=web"
-      - "traefik.http.services.strapi1-api.loadbalancer.server.port=1337"
-      # Main router for Strapi - lowest priority
-      - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.strapi1.priority=10"
-      - "traefik.http.routers.strapi1.entrypoints=web"
       - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
+      - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.strapi1.entrypoints=web"
     depends_on:
       - traefik
       - redis
@@ -98,21 +86,9 @@ services:
       - ./ssl:/app/ssl:ro
     labels:
       - "traefik.enable=true"
-      # Admin router - higher priority for admin path
-      - "traefik.http.routers.strapi2-admin.rule=PathPrefix(`/admin`)"
-      - "traefik.http.routers.strapi2-admin.priority=100"
-      - "traefik.http.routers.strapi2-admin.entrypoints=web"
-      - "traefik.http.services.strapi2-admin.loadbalancer.server.port=1337"
-      # API router
-      - "traefik.http.routers.strapi2-api.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.strapi2-api.priority=90"
-      - "traefik.http.routers.strapi2-api.entrypoints=web"
-      - "traefik.http.services.strapi2-api.loadbalancer.server.port=1337"
-      # Main router for Strapi - lowest priority
-      - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.strapi2.priority=10"
-      - "traefik.http.routers.strapi2.entrypoints=web"
       - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
+      - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.strapi2.entrypoints=web"
     depends_on:
       - traefik
       - redis
