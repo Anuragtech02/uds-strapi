@@ -51,52 +51,52 @@ services:
       - "traefik.http.routers.meilisearch.rule=PathPrefix(`/meili`)"
       - "traefik.http.services.meilisearch.loadbalancer.server.port=7700"
 
-strapi1:
-  build:
-    context: ./strapi
-  env_file: 
-    - ./strapi/.env
-  volumes:
-    - ./strapi:/app
-    - /app/node_modules  # Changed to anonymous volume
-    - strapi1_data:/app/public/uploads
-    - ./ssl:/app/ssl:ro
-  labels:
-    - "traefik.enable=true"
-    - "traefik.docker.network=app-network"
-    - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
-    - "traefik.http.routers.strapi1.entrypoints=web"
-    - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
-  depends_on:
-    - traefik
-    - redis
-    - meilisearch
-  networks:
-    - app-network
-  restart: unless-stopped
+  strapi1:
+    build:
+      context: ./strapi
+    env_file: 
+      - ./strapi/.env
+    volumes:
+      - ./strapi:/app
+      - /app/node_modules  # Changed to anonymous volume
+      - strapi1_data:/app/public/uploads
+      - ./ssl:/app/ssl:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=app-network"
+      - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.strapi1.entrypoints=web"
+      - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
+    depends_on:
+      - traefik
+      - redis
+      - meilisearch
+    networks:
+      - app-network
+    restart: unless-stopped
 
-strapi2:
-  build:
-    context: ./strapi
-  env_file: 
-    - ./strapi/.env
-  volumes:
-    - ./strapi:/app
-    - /app/node_modules  # Changed to anonymous volume
-    - strapi2_data:/app/public/uploads
-    - ./ssl:/app/ssl:ro
-  labels:
-    - "traefik.enable=true"
-    - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
-    - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
-    - "traefik.http.routers.strapi2.entrypoints=web"
-  depends_on:
-    - traefik
-    - redis
-    - meilisearch
-  networks:
-    - app-network
-  restart: unless-stopped
+  strapi2:
+    build:
+      context: ./strapi
+    env_file: 
+      - ./strapi/.env
+    volumes:
+      - ./strapi:/app
+      - /app/node_modules  # Changed to anonymous volume
+      - strapi2_data:/app/public/uploads
+      - ./ssl:/app/ssl:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
+      - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.strapi2.entrypoints=web"
+    depends_on:
+      - traefik
+      - redis
+      - meilisearch
+    networks:
+      - app-network
+    restart: unless-stopped
 
 networks:
   app-network:
