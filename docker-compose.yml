@@ -113,3 +113,4 @@ volumes:
   strapi2_data:
   redis_data:
   meilisearch_data:
+  strapi1_exclude:  # Added this volume
