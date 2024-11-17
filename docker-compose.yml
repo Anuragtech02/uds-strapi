@@ -60,8 +60,21 @@ services:
       - ./ssl:/app/ssl:ro
     labels:
       - "traefik.enable=true"
+      # Updated routing rules
       - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.strapi1.entrypoints=web"
       - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
+      # Add middlewares to handle paths
+      - "traefik.http.middlewares.strapi-admin.stripprefix.prefixes=/admin"
+      - "traefik.http.middlewares.strapi-api.stripprefix.prefixes=/api"
+      - "traefik.http.routers.strapi1-admin.rule=PathPrefix(`/admin`)"
+      - "traefik.http.routers.strapi1-admin.middlewares=strapi-admin"
+      - "traefik.http.routers.strapi1-admin.service=strapi1"
+      - "traefik.http.routers.strapi1-admin.entrypoints=web"
+      - "traefik.http.routers.strapi1-api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.strapi1-api.middlewares=strapi-api"
+      - "traefik.http.routers.strapi1-api.service=strapi1"
+      - "traefik.http.routers.strapi1-api.entrypoints=web"
     depends_on:
       - traefik
       - redis
@@ -96,8 +109,21 @@ services:
       - ./ssl:/app/ssl:ro
     labels:
       - "traefik.enable=true"
+      # Updated routing rules
       - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.strapi2.entrypoints=web"
       - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
+      # Add middlewares to handle paths
+      - "traefik.http.middlewares.strapi-admin.stripprefix.prefixes=/admin"
+      - "traefik.http.middlewares.strapi-api.stripprefix.prefixes=/api"
+      - "traefik.http.routers.strapi2-admin.rule=PathPrefix(`/admin`)"
+      - "traefik.http.routers.strapi2-admin.middlewares=strapi-admin"
+      - "traefik.http.routers.strapi2-admin.service=strapi2"
+      - "traefik.http.routers.strapi2-admin.entrypoints=web"
+      - "traefik.http.routers.strapi2-api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.strapi2-api.middlewares=strapi-api"
+      - "traefik.http.routers.strapi2-api.service=strapi2"
+      - "traefik.http.routers.strapi2-api.entrypoints=web"
     depends_on:
       - traefik
       - redis
