@@ -19,7 +19,7 @@ RUN mkdir -p /app/ssl
 
 # Build the Strapi application with a temporary dummy certificate for build
 RUN echo "dummy certificate" > /app/ssl/dbcertificate.pem && \
-    NODE_ENV=production yarn build && \
+    NODE_ENV=dev yarn build && \
     rm /app/ssl/dbcertificate.pem
 
 EXPOSE 1337
