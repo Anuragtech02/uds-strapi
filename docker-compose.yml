@@ -51,32 +51,29 @@ services:
       - "traefik.http.routers.meilisearch.rule=PathPrefix(`/meili`)"
       - "traefik.http.services.meilisearch.loadbalancer.server.port=7700"
 
-  strapi1:
-    build:
-      context: ./strapi
-    env_file: 
-      - ./strapi/.env
-    volumes:
-      - ./strapi:/app
-      # - /app/node_modules
-      - ./ssl:/app/ssl:ro
-      - strapi1_exclude:/app/node_modules/  # Changed this
-      - strapi1_exclude:/app/.cache/  # Added cache exclusion
-      - strapi1_exclude:/app/build/  # Added build exclusion
-      - strapi1_data:/app/public/uploads
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=app-network"
-      - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.strapi1.entrypoints=web"
-      - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
-    depends_on:
-      - traefik
-      - redis
-      - meilisearch
-    networks:
-      - app-network
-    restart: unless-stopped
+strapi1:
+  build:
+    context: ./strapi
+  env_file: 
+    - ./strapi/.env
+  volumes:
+    - ./strapi:/app
+    - /app/node_modules  # Changed to anonymous volume
+    - strapi1_data:/app/public/uploads
+    - ./ssl:/app/ssl:ro
+  labels:
+    - "traefik.enable=true"
+    - "traefik.docker.network=app-network"
+    - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
+    - "traefik.http.routers.strapi1.entrypoints=web"
+    - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
+  depends_on:
+    - traefik
+    - redis
+    - meilisearch
+  networks:
+    - app-network
+  restart: unless-stopped
 
   strapi2:
     build:
@@ -85,12 +82,9 @@ services:
       - ./strapi/.env
     volumes:
       - ./strapi:/app
-      # - /app/node_modules
+      - /app/node_modules  # Changed to anonymous volume
       - strapi2_data:/app/public/uploads
       - ./ssl:/app/ssl:ro
-      - strapi2_exclude:/app/node_modules/  # Changed this
-      - strapi2_exclude:/app/.cache/  # Added cache exclusion
-      - strapi2_exclude:/app/build/  # Added build exclusion
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
@@ -113,5 +107,3 @@ volumes:
   strapi2_data:
   redis_data:
   meilisearch_data:
-  strapi1_exclude:  # Added this volume
-  strapi2_exclude:  # Added this volume
