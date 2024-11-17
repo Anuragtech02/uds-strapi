@@ -5,9 +5,11 @@ services:
     image: traefik:v2.10
     command:
       - --api.insecure=true
+      - --api.dashboard=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
+      - --entrypoints.traefik.address=:8080
     ports:
       - "80:80"
       - "8080:8080"
@@ -15,6 +17,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - app-network
+    labels:
+      - "traefik.enable=true"
+      # Modified dashboard rule to accept any host
+      - "traefik.http.routers.dashboard.rule=PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=traefik"
 
   redis:
     image: redis:7-alpine
@@ -30,13 +38,25 @@ services:
       context: ./strapi
     env_file: 
       - ./strapi/.env
+    # environment:
+    #   - NODE_ENV=development
+    #   - DATABASE_CLIENT=postgres
+    #   - DATABASE_SSL=true
+    #   - REDIS_HOST=redis
+    #   - REDIS_PORT=6379
+    #   - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
+      - ./strapi:/app
+      - /app/node_modules
       - strapi1_data:/app/public/uploads
       - ./ssl:/app/ssl:ro
     labels:
       - "traefik.enable=true"
+      # Modified rule to accept any host
       - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
       - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
+      - "traefik.http.middlewares.strapi-stripprefix.stripprefix.prefixes=/"
+      - "traefik.http.routers.strapi1.middlewares=strapi-stripprefix"
     depends_on:
       - traefik
       - redis
@@ -49,13 +69,25 @@ services:
       context: ./strapi
     env_file: 
       - ./strapi/.env
+    # environment:
+    #   - NODE_ENV=development
+    #   - DATABASE_CLIENT=postgres
+    #   - DATABASE_SSL=true
+    #   - REDIS_HOST=redis
+    #   - REDIS_PORT=6379
+    #   - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
+      - ./strapi:/app
+      - /app/node_modules
       - strapi2_data:/app/public/uploads
       - ./ssl:/app/ssl:ro
     labels:
       - "traefik.enable=true"
+      # Modified rule to accept any host
       - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
       - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
+      - "traefik.http.middlewares.strapi-stripprefix.stripprefix.prefixes=/"
+      - "traefik.http.routers.strapi2.middlewares=strapi-stripprefix"
     depends_on:
       - traefik
       - redis
