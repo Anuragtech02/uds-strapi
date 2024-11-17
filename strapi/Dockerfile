@@ -24,4 +24,4 @@ RUN echo "dummy certificate" > /app/ssl/dbcertificate.pem && \
 
 EXPOSE 1337
 
-CMD ["yarn", "start"]
+CMD ["yarn", "develop"]

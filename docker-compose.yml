@@ -58,9 +58,12 @@ services:
       - ./strapi/.env
     volumes:
       - ./strapi:/app
-      - /app/node_modules
-      - strapi1_data:/app/public/uploads
+      # - /app/node_modules
       - ./ssl:/app/ssl:ro
+      - strapi1_exclude:/app/node_modules/  # Changed this
+      - strapi1_exclude:/app/.cache/  # Added cache exclusion
+      - strapi1_exclude:/app/build/  # Added build exclusion
+      - strapi1_data:/app/public/uploads
     labels:
       - "traefik.enable=true"
       # Main router for all Strapi traffic
@@ -82,9 +85,12 @@ services:
       - ./strapi/.env
     volumes:
       - ./strapi:/app
-      - /app/node_modules
+      # - /app/node_modules
       - strapi2_data:/app/public/uploads
       - ./ssl:/app/ssl:ro
+      - strapi2_exclude:/app/node_modules/  # Changed this
+      - strapi2_exclude:/app/.cache/  # Added cache exclusion
+      - strapi2_exclude:/app/build/  # Added build exclusion
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
