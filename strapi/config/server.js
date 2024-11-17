@@ -9,7 +9,7 @@ module.exports = ({ env }) => ({
   app: {
     keys: env.array("APP_KEYS"),
   },
-  // url: env("APP_URL", "http://localhost:1337"),
+  url: env("PUBLIC_URL", "/"), // This is important
   webhooks: {
     populateRelations: env.bool("WEBHOOKS_POPULATE_RELATIONS", false),
   },
