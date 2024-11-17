@@ -66,8 +66,8 @@ services:
       - strapi1_data:/app/public/uploads
     labels:
       - "traefik.enable=true"
-      # Main router for all Strapi traffic
-      - "traefik.http.routers.strapi1.rule=Host(`localhost`)"
+      - "traefik.docker.network=app-network"
+      - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
       - "traefik.http.routers.strapi1.entrypoints=web"
       - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
     depends_on:
