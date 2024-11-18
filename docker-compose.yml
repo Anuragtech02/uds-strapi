@@ -38,6 +38,7 @@ services:
       - ./strapi/package.json:/opt/app/package.json
       - ./strapi/yarn.lock:/opt/app/yarn.lock
       - strapi1_data:/opt/app/public/uploads
+      - ./ssl:/opt/app/ssl:ro
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=app-network"
@@ -64,6 +65,7 @@ services:
       - ./strapi/package.json:/opt/app/package.json
       - ./strapi/yarn.lock:/opt/app/yarn.lock
       - strapi2_data:/opt/app/public/uploads
+      - ./ssl:/opt/app/ssl:ro
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=app-network"
