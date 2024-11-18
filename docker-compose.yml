@@ -2,7 +2,7 @@ services:
   traefik:
     image: traefik:v2.10
     command:
-      - --log.level=DEBUG  # Changed to DEBUG for better troubleshooting
+      - --log.level=INFO
       - --api.insecure=true
       - --api.dashboard=true
       - --providers.docker=true
