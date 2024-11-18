@@ -24,6 +24,62 @@ services:
       - "traefik.http.routers.api.entrypoints=traefik"
     restart: unless-stopped
 
+  strapi1:
+    build:
+      context: ./strapi
+      dockerfile: Dockerfile
+    image: strapi1:latest
+    restart: unless-stopped
+    env_file: ./strapi/.env
+    environment:
+      NODE_ENV: production
+    volumes:
+      - ./strapi/config:/opt/app/config
+      - ./strapi/src:/opt/app/src
+      - ./strapi/package.json:/opt/app/package.json
+      - ./strapi/yarn.lock:/opt/app/yarn.lock
+      - strapi1_data:/opt/app/public/uploads
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=app-network"
+      - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.strapi1.entrypoints=web"
+      - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
+    networks:
+      - app-network
+    depends_on:
+      - traefik
+      - redis
+      - meilisearch
+
+  strapi2:
+    build:
+      context: ./strapi
+      dockerfile: Dockerfile
+    image: strapi2:latest
+    env_file: ./strapi/.env
+    environment:
+      NODE_ENV: production
+    volumes:
+      - ./strapi/config:/opt/app/config
+      - ./strapi/src:/opt/app/src
+      - ./strapi/package.json:/opt/app/package.json
+      - ./strapi/yarn.lock:/opt/app/yarn.lock
+      - strapi2_data:/opt/app/public/uploads
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=app-network"
+      - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.strapi2.entrypoints=web"
+      - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
+    networks:
+      - app-network
+    depends_on:
+      - traefik
+      - redis
+      - meilisearch
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     command: redis-server --requirepass ${REDIS_PASSWORD}
@@ -36,11 +92,9 @@ services:
   meilisearch:
     image: getmeili/meilisearch:latest
     environment:
-      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-STRAPI_UNIVDATOS_SEARCH}  # Using your default key
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-STRAPI_UNIVDATOS_SEARCH}
       - MEILI_NO_ANALYTICS=true
-      - MEILI_ENV=development
-    ports:
-      - "7700:7700"
+      - MEILI_ENV=production
     volumes:
       - meilisearch_data:/meili_data
     networks:
@@ -50,53 +104,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.meilisearch.rule=PathPrefix(`/meili`)"
       - "traefik.http.services.meilisearch.loadbalancer.server.port=7700"
-
-  strapi1:
-    build:
-      context: ./strapi
-    env_file: 
-      - ./strapi/.env
-    volumes:
-      - ./strapi:/app
-      - /app/node_modules  # Changed to anonymous volume
-      - strapi1_data:/app/public/uploads
-      - ./ssl:/app/ssl:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=app-network"
-      - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.strapi1.entrypoints=web"
-      - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
-    depends_on:
-      - traefik
-      - redis
-      - meilisearch
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  strapi2:
-    build:
-      context: ./strapi
-    env_file: 
-      - ./strapi/.env
-    volumes:
-      - ./strapi:/app
-      - /app/node_modules  # Changed to anonymous volume
-      - strapi2_data:/app/public/uploads
-      - ./ssl:/app/ssl:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
-      - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.strapi2.entrypoints=web"
-    depends_on:
-      - traefik
-      - redis
-      - meilisearch
-    networks:
-      - app-network
-    restart: unless-stopped
 
 networks:
   app-network:
