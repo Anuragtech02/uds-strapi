@@ -28,7 +28,6 @@ services:
     build:
       context: ./strapi
       dockerfile: Dockerfile
-    image: strapi1:latest
     restart: unless-stopped
     env_file: ./strapi/.env
     environment:
@@ -56,7 +55,6 @@ services:
     build:
       context: ./strapi
       dockerfile: Dockerfile
-    image: strapi2:latest
     env_file: ./strapi/.env
     environment:
       NODE_ENV: production
