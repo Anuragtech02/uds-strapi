@@ -29,7 +29,7 @@ module.exports = [
         origin: [
           "http://localhost:3000",
           "http://localhost:1337",
-          "https:/udsweb-production.up.railway.app",
+          "http://157.20.215.12",
         ],
       },
     },
