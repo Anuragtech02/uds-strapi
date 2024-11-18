@@ -1,21 +1,21 @@
 # Creating multi-stage build for production
 FROM node:18-alpine as build
 RUN apk update && apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev vips-dev git > /dev/null 2>&1
+ENV NODE_ENV=production
 
 WORKDIR /opt/
 COPY package.json yarn.lock ./
 RUN yarn global add node-gyp
-RUN yarn config set network-timeout 600000 -g && yarn install
-
+RUN yarn config set network-timeout 600000 -g && yarn install --production
+ENV PATH=/opt/node_modules/.bin:$PATH
 WORKDIR /opt/app
 COPY . .
+RUN yarn build
 # # Create ssl directory
 # RUN mkdir -p /opt/app/ssl
 
 # # Build the Strapi application with a temporary dummy certificate for build
 # RUN echo "dummy certificate" > /opt/app/ssl/dbcertificate.pem 
-
-RUN NODE_ENV=production yarn build
 
 # Creating final production image
 FROM node:18-alpine
@@ -33,6 +33,5 @@ ENV PATH=/opt/node_modules/.bin:$PATH
 RUN chown -R node:node /opt/app
 USER node
 EXPOSE 1337
-
 
 CMD ["yarn", "start"]
