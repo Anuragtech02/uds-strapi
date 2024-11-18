@@ -30,8 +30,12 @@ COPY --from=build /opt/node_modules ./node_modules
 WORKDIR /opt/app
 COPY --from=build /opt/app ./
 
-# Create ssl directory for runtime certificate
-RUN mkdir -p /opt/app/ssl && chown -R node:node /opt/app
+# Create ssl directory for runtime certificate with proper permissions
+RUN mkdir -p /opt/app/ssl && \
+    chown -R node:node /opt/app && \
+    chmod -R 755 /opt/app && \
+    chmod 777 /opt/app/ssl  # Make ssl directory writable
+
 ENV PATH=/opt/node_modules/.bin:$PATH
 
 RUN chown -R node:node /opt/app
