@@ -4,24 +4,38 @@ services:
     command:
       - --log.level=INFO
       - --api.insecure=true
-      - --api.dashboard=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=app-network
+      # Entrypoints configuration
       - --entrypoints.web.address=:80
-      - --entrypoints.traefik.address=:8080
+      - --entrypoints.websecure.address=:443
+      # Automatic HTTP to HTTPS redirect
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      # Let's Encrypt configuration
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencrypt.acme.email=apal895@gmail.com
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
     ports:
       - "80:80"
-      - "8080:8080"
+      - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
     networks:
       - app-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/dashboard`)"
-      - "traefik.http.routers.api.service=api@internal"
-      - "traefik.http.routers.api.entrypoints=traefik"
+      # Dashboard configuration with SSL
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.web-server-india.univdatos.com`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.middlewares=auth"
+      # Basic auth middleware for dashboard security
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$apr1$NDjCrG3p$NoWejh5xhJDLFf4usjPTq1"  # Replace with generated hash
     restart: unless-stopped
 
   strapi1:
@@ -42,8 +56,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=app-network"
-      - "traefik.http.routers.strapi1.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.strapi1.entrypoints=web"
+      # Main application router
+      - "traefik.http.routers.strapi1.rule=Host(`web-server-india.univdatos.com`)"
+      - "traefik.http.routers.strapi1.entrypoints=websecure"
+      - "traefik.http.routers.strapi1.tls.certresolver=letsencrypt"
       - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
     networks:
       - app-network
@@ -69,8 +85,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=app-network"
-      - "traefik.http.routers.strapi2.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.strapi2.entrypoints=web"
+      # Main application router
+      - "traefik.http.routers.strapi2.rule=Host(`web-server-india.univdatos.com`)"
+      - "traefik.http.routers.strapi2.entrypoints=websecure"
+      - "traefik.http.routers.strapi2.tls.certresolver=letsencrypt"
       - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
     networks:
       - app-network
@@ -102,7 +120,9 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.meilisearch.rule=PathPrefix(`/meili`)"
+      - "traefik.http.routers.meilisearch.rule=Host(`web-server-india.univdatos.com`) && PathPrefix(`/meili`)"
+      - "traefik.http.routers.meilisearch.entrypoints=websecure"
+      - "traefik.http.routers.meilisearch.tls.certresolver=letsencrypt"
       - "traefik.http.services.meilisearch.loadbalancer.server.port=7700"
 
 networks:
@@ -110,6 +130,7 @@ networks:
     driver: bridge
 
 volumes:
+  letsencrypt:
   strapi1_data:
   strapi2_data:
   redis_data:
