@@ -3,21 +3,19 @@ services:
     image: traefik:v2.10
     command:
       - --log.level=DEBUG
-      - --api.insecure=true
+      - --api.insecure=false  # Changed to false for security
+      - --api.dashboard=true  # Explicitly enable dashboard
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=uds-strapi_app-network
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --certificatesresolvers.letsencrypt.acme.email=apal895@gmail.com
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
       - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
-      # Remove automatic HTTPS redirect initially to allow HTTP challenge
-      # - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      # - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --serversTransport.forwardingTimeouts.dialTimeout=30s
-      - --serversTransport.forwardingTimeouts.responseHeaderTimeout=30s
     ports:
       - "80:80"
       - "443:443"
@@ -34,7 +32,9 @@ services:
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
-      - "traefik.http.middlewares.auth.basicauth.users=admin:$apr1$rF0g0UUr$qk6l4LtB4q7L1W96qkB5W1"
+      - "traefik.http.routers.dashboard.middlewares=auth-middleware"
+      # Basic auth middleware
+      - "traefik.http.middlewares.auth-middleware.basicauth.users=admin:$apr1$rF0g0UUr$qk6l4LtB4q7L1W96qkB5W1"
     restart: unless-stopped
 
   strapi1:
