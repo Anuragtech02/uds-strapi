@@ -2,22 +2,23 @@ services:
   traefik:
     image: traefik:v2.10
     command:
-      - --log.level=INFO
+      - --log.level=DEBUG  # Changed to DEBUG for troubleshooting
       - --api.insecure=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=app-network
-      # Entrypoints configuration
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      # Automatic HTTP to HTTPS redirect
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      # Let's Encrypt configuration
       - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
       - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
       - --certificatesresolvers.letsencrypt.acme.email=apal895@gmail.com
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      # Add timeout settings
+      - --serversTransport.forwardingTimeouts.dialTimeout=15s
+      - --serversTransport.forwardingTimeouts.responseHeaderTimeout=30s
+      - --serversTransport.forwardingTimeouts.idleConnTimeout=60s
     ports:
       - "80:80"
       - "443:443"
@@ -56,11 +57,18 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=app-network"
-      # Main application router
       - "traefik.http.routers.strapi1.rule=Host(`web-server-india.univdatos.com`)"
       - "traefik.http.routers.strapi1.entrypoints=websecure"
       - "traefik.http.routers.strapi1.tls.certresolver=letsencrypt"
       - "traefik.http.services.strapi1.loadbalancer.server.port=1337"
+      # Add service to loadbalancer group
+      - "traefik.http.services.strapi-service.loadbalancer.server.port=1337"
+      - "traefik.http.services.strapi-service.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.strapi-service.loadbalancer.sticky.cookie.name=strapi_sticky"
+      # Add health check
+      - "traefik.http.services.strapi1.loadbalancer.healthcheck.path=/healthcheck"
+      - "traefik.http.services.strapi1.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.services.strapi1.loadbalancer.healthcheck.timeout=5s"
     networks:
       - app-network
     depends_on:
@@ -85,11 +93,16 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=app-network"
-      # Main application router
       - "traefik.http.routers.strapi2.rule=Host(`web-server-india.univdatos.com`)"
       - "traefik.http.routers.strapi2.entrypoints=websecure"
       - "traefik.http.routers.strapi2.tls.certresolver=letsencrypt"
       - "traefik.http.services.strapi2.loadbalancer.server.port=1337"
+      # Add service to same loadbalancer group
+      - "traefik.http.services.strapi-service.loadbalancer.server.port=1337"
+      # Add health check
+      - "traefik.http.services.strapi2.loadbalancer.healthcheck.path=/healthcheck"
+      - "traefik.http.services.strapi2.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.services.strapi2.loadbalancer.healthcheck.timeout=5s"
     networks:
       - app-network
     depends_on:
