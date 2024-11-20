@@ -6,16 +6,16 @@ services:
       - --api.insecure=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=uds-strapi_app-network  # Updated network name
+      - --providers.docker.network=uds-strapi_app-network
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
-      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
       - --certificatesresolvers.letsencrypt.acme.email=apal895@gmail.com
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
-      # Add timeout settings
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      # Remove automatic HTTPS redirect initially to allow HTTP challenge
+      # - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      # - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --serversTransport.forwardingTimeouts.dialTimeout=30s
       - --serversTransport.forwardingTimeouts.responseHeaderTimeout=30s
     ports:
@@ -23,7 +23,7 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - letsencrypt:/letsencrypt
+      - ./letsencrypt:/letsencrypt
     networks:
       - app-network
     labels:
@@ -32,10 +32,9 @@ services:
       - "traefik.http.routers.dashboard.rule=Host(`traefik.web-server-india.univdatos.com`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.dashboard.middlewares=auth"
-      # Basic auth middleware (using pre-generated hash)
-      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$rF0g0UUr$$qk6l4LtB4q7L1W96qkB5W1"
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$apr1$rF0g0UUr$qk6l4LtB4q7L1W96qkB5W1"
     restart: unless-stopped
 
   strapi1:
@@ -55,12 +54,17 @@ services:
       - ./ssl:/opt/app/ssl:ro
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=uds-strapi_app-network"  # Updated network name
+      - "traefik.docker.network=uds-strapi_app-network"
       - "traefik.http.services.strapi-backend.loadbalancer.server.port=1337"
       - "traefik.http.routers.strapi1.rule=Host(`web-server-india.univdatos.com`)"
       - "traefik.http.routers.strapi1.entrypoints=websecure"
       - "traefik.http.routers.strapi1.service=strapi-backend"
+      - "traefik.http.routers.strapi1.tls=true"
       - "traefik.http.routers.strapi1.tls.certresolver=letsencrypt"
+      # Add HTTP router for ACME challenge
+      - "traefik.http.routers.strapi1-http.rule=Host(`web-server-india.univdatos.com`)"
+      - "traefik.http.routers.strapi1-http.entrypoints=web"
+      - "traefik.http.routers.strapi1-http.service=strapi-backend"
     networks:
       - app-network
     depends_on:
@@ -84,12 +88,17 @@ services:
       - ./ssl:/opt/app/ssl:ro
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=uds-strapi_app-network"  # Updated network name
+      - "traefik.docker.network=uds-strapi_app-network"
       - "traefik.http.services.strapi-backend.loadbalancer.server.port=1337"
       - "traefik.http.routers.strapi2.rule=Host(`web-server-india.univdatos.com`)"
       - "traefik.http.routers.strapi2.entrypoints=websecure"
       - "traefik.http.routers.strapi2.service=strapi-backend"
+      - "traefik.http.routers.strapi2.tls=true"
       - "traefik.http.routers.strapi2.tls.certresolver=letsencrypt"
+      # Add HTTP router for ACME challenge
+      - "traefik.http.routers.strapi2-http.rule=Host(`web-server-india.univdatos.com`)"
+      - "traefik.http.routers.strapi2-http.entrypoints=web"
+      - "traefik.http.routers.strapi2-http.service=strapi-backend"
     networks:
       - app-network
     depends_on:
