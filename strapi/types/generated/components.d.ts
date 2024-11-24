@@ -104,13 +104,13 @@ export interface SharedSeo extends Schema.Component {
     metaTitle: Attribute.String &
       Attribute.Required &
       Attribute.SetMinMaxLength<{
-        maxLength: 60;
+        maxLength: 300;
       }>;
     metaDescription: Attribute.String &
       Attribute.Required &
       Attribute.SetMinMaxLength<{
         minLength: 50;
-        maxLength: 160;
+        maxLength: 300;
       }>;
     metaImage: Attribute.Media<'images' | 'files' | 'videos'>;
     metaSocial: Attribute.Component<'shared.meta-social', true>;
@@ -133,6 +133,7 @@ export interface SharedMetaSocial extends Schema.Component {
   info: {
     displayName: 'metaSocial';
     icon: 'project-diagram';
+    description: '';
   };
   attributes: {
     socialNetwork: Attribute.Enumeration<['Facebook', 'Twitter']> &
@@ -140,12 +141,12 @@ export interface SharedMetaSocial extends Schema.Component {
     title: Attribute.String &
       Attribute.Required &
       Attribute.SetMinMaxLength<{
-        maxLength: 60;
+        maxLength: 300;
       }>;
     description: Attribute.String &
       Attribute.Required &
       Attribute.SetMinMaxLength<{
-        maxLength: 65;
+        maxLength: 300;
       }>;
     image: Attribute.Media<'images' | 'files' | 'videos'>;
   };

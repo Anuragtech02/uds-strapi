@@ -39,6 +39,11 @@
     },
     "footerScripts": {
       "type": "text"
+    },
+    "industries": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::industry.industry"
     }
   }
 }

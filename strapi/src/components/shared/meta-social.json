@@ -2,7 +2,8 @@
   "collectionName": "components_shared_meta_socials",
   "info": {
     "displayName": "metaSocial",
-    "icon": "project-diagram"
+    "icon": "project-diagram",
+    "description": ""
   },
   "options": {},
   "attributes": {
@@ -17,21 +18,22 @@
     "title": {
       "type": "string",
       "required": true,
-      "maxLength": 60
+      "maxLength": 300
     },
     "description": {
       "type": "string",
-      "maxLength": 65,
+      "maxLength": 300,
       "required": true
     },
     "image": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
       "allowedTypes": [
         "images",
         "files",
         "videos"
-      ],
-      "type": "media",
-      "multiple": false
+      ]
     }
   }
 }

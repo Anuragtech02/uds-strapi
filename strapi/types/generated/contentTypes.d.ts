@@ -1637,6 +1637,11 @@ export interface ApiFooterFooter extends Schema.SingleType {
     email: Attribute.Email & Attribute.Required;
     copyRightText: Attribute.String;
     footerScripts: Attribute.Text;
+    industries: Attribute.Relation<
+      'api::footer.footer',
+      'oneToMany',
+      'api::industry.industry'
+    >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
@@ -2674,6 +2679,19 @@ export interface ApiReportReport extends Schema.CollectionType {
         };
         translate: {
           translate: 'translate';
+        };
+      }>;
+    researchMethodology: Attribute.RichText &
+      Attribute.Required &
+      Attribute.CustomField<
+        'plugin::ckeditor5.CKEditor',
+        {
+          preset: 'toolbar';
+        }
+      > &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
         };
       }>;
     createdAt: Attribute.DateTime;
