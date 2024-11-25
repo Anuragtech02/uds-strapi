@@ -16,7 +16,7 @@
       "options": {
         "preset": "toolbar"
       },
-      "required": true,
+      "required": false,
       "customField": "plugin::ckeditor5.CKEditor"
     }
   }

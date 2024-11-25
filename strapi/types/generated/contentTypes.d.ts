@@ -2421,19 +2421,6 @@ export interface ApiReportReport extends Schema.CollectionType {
         },
         number
       >;
-    aboutReport: Attribute.RichText &
-      Attribute.Required &
-      Attribute.CustomField<
-        'plugin::ckeditor5.CKEditor',
-        {
-          preset: 'toolbar';
-        }
-      > &
-      Attribute.SetPluginOptions<{
-        i18n: {
-          localized: true;
-        };
-      }>;
     tableOfContent: Attribute.Component<'utils.list-with-editor', true> &
       Attribute.Required &
       Attribute.SetPluginOptions<{
@@ -2465,7 +2452,6 @@ export interface ApiReportReport extends Schema.CollectionType {
         minLength: 1;
       }>;
     faqList: Attribute.Component<'utils.list-with-editor', true> &
-      Attribute.Required &
       Attribute.SetPluginOptions<{
         i18n: {
           localized: true;
@@ -2550,7 +2536,6 @@ export interface ApiReportReport extends Schema.CollectionType {
         minLength: 1;
       }>;
     ctaBanner: Attribute.Component<'utils.cta-banner'> &
-      Attribute.Required &
       Attribute.SetPluginOptions<{
         i18n: {
           localized: true;
@@ -2689,6 +2674,12 @@ export interface ApiReportReport extends Schema.CollectionType {
           preset: 'toolbar';
         }
       > &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    oldPublishedAt: Attribute.DateTime &
       Attribute.SetPluginOptions<{
         i18n: {
           localized: true;

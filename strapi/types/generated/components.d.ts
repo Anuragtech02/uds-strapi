@@ -35,7 +35,6 @@ export interface UtilsListWithEditor extends Schema.Component {
   attributes: {
     title: Attribute.String & Attribute.Required;
     description: Attribute.RichText &
-      Attribute.Required &
       Attribute.CustomField<
         'plugin::ckeditor5.CKEditor',
         {
@@ -85,8 +84,7 @@ export interface UtilsCtaBanner extends Schema.Component {
   };
   attributes: {
     title: Attribute.String;
-    ctaButton: Attribute.Component<'utils.navigation-link'> &
-      Attribute.Required;
+    ctaButton: Attribute.Component<'utils.navigation-link'>;
     type: Attribute.Enumeration<['Type-1', 'Type-2', 'Type-3']> &
       Attribute.Required &
       Attribute.DefaultTo<'Type-1'>;

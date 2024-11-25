@@ -13,7 +13,7 @@
       "type": "component",
       "repeatable": false,
       "component": "utils.navigation-link",
-      "required": true
+      "required": false
     },
     "type": {
       "type": "enumeration",
