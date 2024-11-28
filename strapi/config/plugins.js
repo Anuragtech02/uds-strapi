@@ -11,6 +11,10 @@ module.exports = ({ env }) => ({
       host: env("MEILISEARCH_HOST", "http://localhost:7700"),
       // Your master key or private key
       apiKey: env("MEILISEARCH_MASTER_KEY", "STRAPI_UNIVDATOS_SEARCH"),
+      prefix: "/meilisearch",
+      defaultSearchParams: {
+        limit: 20,
+      },
     },
   },
   seo: {
@@ -92,17 +96,17 @@ module.exports = ({ env }) => ({
     config: {
       contentTypes: {
         blog: {
-          field: 'slug',
-          references: 'title',
+          field: "slug",
+          references: "title",
         },
         report: {
-          field: 'slug',
-          references: 'title',
-          shouldUpdateSlug: false
+          field: "slug",
+          references: "title",
+          shouldUpdateSlug: false,
         },
-        'news-article': {
-          field: 'slug',
-          references: 'title',
+        "news-article": {
+          field: "slug",
+          references: "title",
         },
       },
     },
