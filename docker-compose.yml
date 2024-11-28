@@ -12,7 +12,7 @@ services:
       - --entrypoints.websecure.address=:443
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --certificatesresolvers.letsencrypt.acme.email=apal895@gmail.com
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
       - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
@@ -129,7 +129,7 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.meilisearch.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/meili`)"
+      - "traefik.http.routers.meilisearch.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/meilisearch`)"
       - "traefik.http.routers.meilisearch.entrypoints=websecure"
       - "traefik.http.routers.meilisearch.tls.certresolver=letsencrypt"
       - "traefik.http.services.meilisearch.loadbalancer.server.port=7700"
