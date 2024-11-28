@@ -2,7 +2,7 @@ services:
   traefik:
     image: traefik:v2.10
     command:
-      - --log.level=DEBUG
+      - --log.level=INFO
       - --api.insecure=false  # Changed to false for security
       - --api.dashboard=true  # Explicitly enable dashboard
       - --providers.docker=true
@@ -12,7 +12,7 @@ services:
       - --entrypoints.websecure.address=:443
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --certificatesresolvers.letsencrypt.acme.email=apal895@gmail.com
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
       - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
@@ -27,7 +27,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Dashboard configuration
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.web-server-india.univdatos.com`)"
+      - "traefik.http.routers.dashboard.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.tls=true"
@@ -56,13 +56,13 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=uds-strapi_app-network"
       - "traefik.http.services.strapi-backend.loadbalancer.server.port=1337"
-      - "traefik.http.routers.strapi1.rule=Host(`web-server-india.univdatos.com`)"
+      - "traefik.http.routers.strapi1.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.strapi1.entrypoints=websecure"
       - "traefik.http.routers.strapi1.service=strapi-backend"
       - "traefik.http.routers.strapi1.tls=true"
       - "traefik.http.routers.strapi1.tls.certresolver=letsencrypt"
       # Add HTTP router for ACME challenge
-      - "traefik.http.routers.strapi1-http.rule=Host(`web-server-india.univdatos.com`)"
+      - "traefik.http.routers.strapi1-http.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.strapi1-http.entrypoints=web"
       - "traefik.http.routers.strapi1-http.service=strapi-backend"
     networks:
@@ -90,13 +90,13 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=uds-strapi_app-network"
       - "traefik.http.services.strapi-backend.loadbalancer.server.port=1337"
-      - "traefik.http.routers.strapi2.rule=Host(`web-server-india.univdatos.com`)"
+      - "traefik.http.routers.strapi2.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.strapi2.entrypoints=websecure"
       - "traefik.http.routers.strapi2.service=strapi-backend"
       - "traefik.http.routers.strapi2.tls=true"
       - "traefik.http.routers.strapi2.tls.certresolver=letsencrypt"
       # Add HTTP router for ACME challenge
-      - "traefik.http.routers.strapi2-http.rule=Host(`web-server-india.univdatos.com`)"
+      - "traefik.http.routers.strapi2-http.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.strapi2-http.entrypoints=web"
       - "traefik.http.routers.strapi2-http.service=strapi-backend"
     networks:
@@ -129,7 +129,7 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.meilisearch.rule=Host(`web-server-india.univdatos.com`) && PathPrefix(`/meili`)"
+      - "traefik.http.routers.meilisearch.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/meili`)"
       - "traefik.http.routers.meilisearch.entrypoints=websecure"
       - "traefik.http.routers.meilisearch.tls.certresolver=letsencrypt"
       - "traefik.http.services.meilisearch.loadbalancer.server.port=7700"
