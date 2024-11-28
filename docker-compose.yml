@@ -2,7 +2,7 @@ services:
   traefik:
     image: traefik:v2.10
     command:
-      - --log.level=INFO
+      - --log.level=DEBUG
       - --api.insecure=false  # Changed to false for security
       - --api.dashboard=true  # Explicitly enable dashboard
       - --providers.docker=true
