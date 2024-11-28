@@ -130,6 +130,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.meilisearch.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/meilisearch`)"
+      - "traefik.http.middlewares.meilisearch-strip.stripprefix.prefixes=/meilisearch"
+      - "traefik.http.routers.meilisearch.middlewares=meilisearch-strip"
       - "traefik.http.routers.meilisearch.entrypoints=websecure"
       - "traefik.http.routers.meilisearch.tls.certresolver=letsencrypt"
       - "traefik.http.services.meilisearch.loadbalancer.server.port=7700"
