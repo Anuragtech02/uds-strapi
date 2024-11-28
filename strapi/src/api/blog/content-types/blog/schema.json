@@ -136,6 +136,14 @@
       },
       "type": "string",
       "unique": true
+    },
+    "oldPublishedAt": {
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      },
+      "type": "datetime"
     }
   }
 }

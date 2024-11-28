@@ -1155,6 +1155,7 @@ export interface ApiAuthorAuthor extends Schema.CollectionType {
     singularName: 'author';
     pluralName: 'authors';
     displayName: 'Author';
+    description: '';
   };
   options: {
     draftAndPublish: true;
@@ -1172,6 +1173,7 @@ export interface ApiAuthorAuthor extends Schema.CollectionType {
       'oneToMany',
       'api::news-article.news-article'
     >;
+    slug: Attribute.UID<'api::author.author', 'name'>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
@@ -2161,6 +2163,12 @@ export interface ApiNewsArticleNewsArticle extends Schema.CollectionType {
         };
         translate: {
           translate: 'translate';
+        };
+      }>;
+    oldPublishedAt: Attribute.DateTime &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
         };
       }>;
     createdAt: Attribute.DateTime;

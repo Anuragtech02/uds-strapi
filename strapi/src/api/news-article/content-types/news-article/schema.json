@@ -125,6 +125,14 @@
       "type": "string",
       "required": false,
       "unique": true
+    },
+    "oldPublishedAt": {
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      },
+      "type": "datetime"
     }
   }
 }
