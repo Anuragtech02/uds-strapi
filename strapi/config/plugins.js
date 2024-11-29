@@ -11,10 +11,6 @@ module.exports = ({ env }) => ({
       host: env("MEILISEARCH_HOST", "http://localhost:7700"),
       // Your master key or private key
       apiKey: env("MEILISEARCH_MASTER_KEY", "STRAPI_UNIVDATOS_SEARCH"),
-      prefix: "/meilisearch",
-      defaultSearchParams: {
-        limit: 20,
-      },
     },
   },
   seo: {
