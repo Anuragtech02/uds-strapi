@@ -10,7 +10,10 @@
       "type": "enumeration",
       "enum": [
         "USD",
-        "INR"
+        "INR",
+        "JPY",
+        "EUR",
+        "GBP"
       ],
       "default": "USD",
       "required": true
