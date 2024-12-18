@@ -23,6 +23,7 @@ module.exports = {
       return data;
     } catch (error) {
       ctx.throw(500, "Failed to fetch exchange rates");
+      console.log(error);
     }
   },
 };
