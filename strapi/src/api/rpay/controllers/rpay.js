@@ -1,12 +1,17 @@
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
-require("dotenv").config();
 
-module.exports = {
+module.exports = ({ strapi }) => ({
   createOrder: async (ctx) => {
     const razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
+      key_id: strapi.config.get(
+        "server.razorpay.key_id",
+        process.env.RAZORPAY_KEY_ID
+      ),
+      key_secret: strapi.config.get(
+        "server.razorpay.key_secret",
+        process.env.RAZORPAY_KEY_SECRET
+      ),
     });
 
     try {
@@ -36,7 +41,10 @@ module.exports = {
       const { orderCreationId, razorpayPaymentId, razorpaySignature } =
         ctx.request.body;
 
-      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+      const keySecret = strapi.config.get(
+        "server.razorpay.key_secret",
+        process.env.RAZORPAY_KEY_SECRET
+      );
       if (!keySecret) {
         throw new Error(
           "Razorpay key secret is not defined in environment variables."
@@ -66,4 +74,4 @@ module.exports = {
       });
     }
   },
-};
+});

@@ -13,4 +13,8 @@ module.exports = ({ env }) => ({
   webhooks: {
     populateRelations: env.bool("WEBHOOKS_POPULATE_RELATIONS", false),
   },
+  razorpay: {
+    key_id: env("RAZORPAY_KEY_ID"),
+    key_secret: env("RAZORPAY_KEY_SECRET"),
+  },
 });
