@@ -5,7 +5,7 @@ module.exports = {
 
       // Try to get cached rates
       const cacheKey = `exchange_rates_${from}`;
-      const cachedRates = await strapi.cache.get(cacheKey);
+      const cachedRates = await ctx.strapi.cache.get(cacheKey);
 
       if (cachedRates) {
         return cachedRates;
@@ -18,7 +18,7 @@ module.exports = {
       const data = await response.json();
 
       // Cache the results for 1 hour (3600 seconds)
-      await strapi.cache.set(cacheKey, data, 3600);
+      await ctx.strapi.cache.set(cacheKey, data, 3600);
 
       return data;
     } catch (error) {
