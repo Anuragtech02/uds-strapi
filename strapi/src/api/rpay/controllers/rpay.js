@@ -1,5 +1,6 @@
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
+require("dotenv").config();
 
 module.exports = {
   createOrder: async (ctx) => {
