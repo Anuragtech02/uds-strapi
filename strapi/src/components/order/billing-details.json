@@ -1,0 +1,48 @@
+{
+    "collectionName": "components_order_billing_details",
+    "info": {
+      "displayName": "Billing Details",
+      "description": "Customer billing information for orders"
+    },
+    "options": {},
+    "attributes": {
+      "firstName": {
+        "type": "string",
+        "required": true,
+        "minLength": 2
+      },
+      "lastName": {
+        "type": "string",
+        "required": true,
+        "minLength": 2
+      },
+      "email": {
+        "type": "email",
+        "required": true
+      },
+      "phone": {
+        "type": "string",
+        "required": true
+      },
+      "country": {
+        "type": "string",
+        "required": true
+      },
+      "state": {
+        "type": "string",
+        "required": true
+      },
+      "city": {
+        "type": "string",
+        "required": true
+      },
+      "address": {
+        "type": "text",
+        "required": true,
+        "minLength": 10
+      },
+      "orderNotes": {
+        "type": "text"
+      }
+    }
+  }
