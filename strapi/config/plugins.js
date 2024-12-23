@@ -112,7 +112,7 @@ module.exports = ({ env }) => ({
     config: {
       // cron: '0 0 0 * * *',
       limit: 45000,
-      xsl: true,
+      xsl: false,
       autoGenerate: true,
       caching: true,
       allowedFields: ["id", "uid", "slug"],
