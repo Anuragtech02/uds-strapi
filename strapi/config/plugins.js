@@ -115,7 +115,7 @@ module.exports = ({ env }) => ({
       xsl: true,
       autoGenerate: true,
       caching: true,
-      allowedFields: ["id", "uid"],
+      allowedFields: ["id", "uid", "slug"],
       excludedTypes: [
         "api::order.api",
         "api::order.order",
