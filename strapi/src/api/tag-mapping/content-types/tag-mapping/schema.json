@@ -1,0 +1,25 @@
+{
+  "kind": "collectionType",
+  "collectionName": "tag_mappings",
+  "info": {
+    "singularName": "tag-mapping",
+    "pluralName": "tag-mappings",
+    "displayName": "Tag Mapping"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "tagSlug": {
+      "type": "string",
+      "unique": true,
+      "required": true
+    },
+    "reportSlug": {
+      "type": "string",
+      "required": true,
+      "unique": false
+    }
+  }
+}
