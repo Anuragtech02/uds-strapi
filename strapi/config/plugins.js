@@ -54,6 +54,7 @@ module.exports = ({ env }) => ({
           "api::geography.geography",
           "api::author.author",
           "api::home-page.home-page",
+          "api::tag-mapping.tag-mapping",
         ],
       },
     },
