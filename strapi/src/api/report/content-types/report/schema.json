@@ -402,6 +402,17 @@
         }
       },
       "type": "datetime"
+    },
+    "productId": {
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        },
+        "translate": {
+          "translate": "translate"
+        }
+      },
+      "type": "string"
     }
   }
 }

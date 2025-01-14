@@ -1500,6 +1500,7 @@ export interface ApiContactFormSubmissionContactFormSubmission
     mobileNumber: Attribute.String & Attribute.Required;
     message: Attribute.Text & Attribute.Required;
     country: Attribute.String;
+    businessEmail: Attribute.Email & Attribute.Required;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
