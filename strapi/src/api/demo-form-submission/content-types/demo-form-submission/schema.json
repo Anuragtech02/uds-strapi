@@ -1,0 +1,41 @@
+{
+  "kind": "collectionType",
+  "collectionName": "demo_form_submissions",
+  "info": {
+    "singularName": "demo-form-submission",
+    "pluralName": "demo-form-submissions",
+    "displayName": "Demo Form Submission",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "fullName": {
+      "type": "string",
+      "required": true
+    },
+    "businessEmail": {
+      "type": "email",
+      "required": true
+    },
+    "mobile": {
+      "type": "string",
+      "required": true
+    },
+    "company": {
+      "type": "string",
+      "required": true
+    },
+    "message": {
+      "type": "text"
+    },
+    "rawData": {
+      "type": "json"
+    },
+    "source": {
+      "type": "string"
+    }
+  }
+}

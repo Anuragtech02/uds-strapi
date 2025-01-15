@@ -1482,6 +1482,47 @@ export interface ApiBlogBlog extends Schema.CollectionType {
   };
 }
 
+export interface ApiCallbackFormSubmissionCallbackFormSubmission
+  extends Schema.CollectionType {
+  collectionName: 'callback_form_submissions';
+  info: {
+    singularName: 'callback-form-submission';
+    pluralName: 'callback-form-submissions';
+    displayName: 'Callback Form Submission';
+    description: '';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    fullName: Attribute.String & Attribute.Required;
+    businessEmail: Attribute.Email & Attribute.Required;
+    mobileNumber: Attribute.String & Attribute.Required;
+    country: Attribute.String & Attribute.Required;
+    message: Attribute.Text;
+    rawData: Attribute.JSON;
+    source: Attribute.String;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    publishedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::callback-form-submission.callback-form-submission',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::callback-form-submission.callback-form-submission',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    sitemap_exclude: Attribute.Boolean &
+      Attribute.Private &
+      Attribute.DefaultTo<false>;
+  };
+}
+
 export interface ApiContactFormSubmissionContactFormSubmission
   extends Schema.CollectionType {
   collectionName: 'contact_form_submissions';
@@ -1501,6 +1542,7 @@ export interface ApiContactFormSubmissionContactFormSubmission
     message: Attribute.Text & Attribute.Required;
     country: Attribute.String;
     businessEmail: Attribute.Email & Attribute.Required;
+    rawData: Attribute.JSON;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
@@ -1741,6 +1783,47 @@ export interface ApiCouponCoupon extends Schema.CollectionType {
       Attribute.Private;
     updatedBy: Attribute.Relation<
       'api::coupon.coupon',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    sitemap_exclude: Attribute.Boolean &
+      Attribute.Private &
+      Attribute.DefaultTo<false>;
+  };
+}
+
+export interface ApiDemoFormSubmissionDemoFormSubmission
+  extends Schema.CollectionType {
+  collectionName: 'demo_form_submissions';
+  info: {
+    singularName: 'demo-form-submission';
+    pluralName: 'demo-form-submissions';
+    displayName: 'Demo Form Submission';
+    description: '';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    fullName: Attribute.String & Attribute.Required;
+    businessEmail: Attribute.Email & Attribute.Required;
+    mobile: Attribute.String & Attribute.Required;
+    company: Attribute.String & Attribute.Required;
+    message: Attribute.Text;
+    rawData: Attribute.JSON;
+    source: Attribute.String;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    publishedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::demo-form-submission.demo-form-submission',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::demo-form-submission.demo-form-submission',
       'oneToOne',
       'admin::user'
     > &
@@ -3090,6 +3173,15 @@ export interface ApiReportReport extends Schema.CollectionType {
           localized: true;
         };
       }>;
+    productId: Attribute.String &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+        translate: {
+          translate: 'translate';
+        };
+      }>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
@@ -3506,9 +3598,11 @@ declare module '@strapi/types' {
       'api::about-page.about-page': ApiAboutPageAboutPage;
       'api::author.author': ApiAuthorAuthor;
       'api::blog.blog': ApiBlogBlog;
+      'api::callback-form-submission.callback-form-submission': ApiCallbackFormSubmissionCallbackFormSubmission;
       'api::contact-form-submission.contact-form-submission': ApiContactFormSubmissionContactFormSubmission;
       'api::contact-page.contact-page': ApiContactPageContactPage;
       'api::coupon.coupon': ApiCouponCoupon;
+      'api::demo-form-submission.demo-form-submission': ApiDemoFormSubmissionDemoFormSubmission;
       'api::disclaimer.disclaimer': ApiDisclaimerDisclaimer;
       'api::enquiry-form-submission.enquiry-form-submission': ApiEnquiryFormSubmissionEnquiryFormSubmission;
       'api::footer.footer': ApiFooterFooter;

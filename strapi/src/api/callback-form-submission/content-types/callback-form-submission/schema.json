@@ -1,10 +1,10 @@
 {
   "kind": "collectionType",
-  "collectionName": "contact_form_submissions",
+  "collectionName": "callback_form_submissions",
   "info": {
-    "singularName": "contact-form-submission",
-    "pluralName": "contact-form-submissions",
-    "displayName": "Contact Form Submission",
+    "singularName": "callback-form-submission",
+    "pluralName": "callback-form-submissions",
+    "displayName": "Callback Form Submission",
     "description": ""
   },
   "options": {
@@ -16,27 +16,26 @@
       "type": "string",
       "required": true
     },
-    "company": {
-      "type": "string",
+    "businessEmail": {
+      "type": "email",
       "required": true
     },
     "mobileNumber": {
       "type": "string",
       "required": true
     },
-    "message": {
-      "type": "text",
-      "required": true
-    },
     "country": {
-      "type": "string"
-    },
-    "businessEmail": {
-      "type": "email",
+      "type": "string",
       "required": true
+    },
+    "message": {
+      "type": "text"
     },
     "rawData": {
       "type": "json"
+    },
+    "source": {
+      "type": "string"
     }
   }
 }
