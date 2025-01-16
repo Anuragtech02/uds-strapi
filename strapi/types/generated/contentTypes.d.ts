@@ -3236,18 +3236,7 @@ export interface ApiServiceService extends Schema.CollectionType {
           translate: 'copy';
         };
       }>;
-    shortDescription: Attribute.Text &
-      Attribute.Required &
-      Attribute.SetPluginOptions<{
-        i18n: {
-          localized: true;
-        };
-        translate: {
-          translate: 'copy';
-        };
-      }>;
     description: Attribute.RichText &
-      Attribute.Required &
       Attribute.CustomField<
         'plugin::ckeditor5.CKEditor',
         {
@@ -3270,6 +3259,18 @@ export interface ApiServiceService extends Schema.CollectionType {
       }>;
     slug: Attribute.UID<'api::service.service', 'title'> &
       Attribute.Required &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    shortDescription: Attribute.RichText &
+      Attribute.CustomField<
+        'plugin::ckeditor5.CKEditor',
+        {
+          preset: 'toolbar';
+        }
+      > &
       Attribute.SetPluginOptions<{
         i18n: {
           localized: true;
