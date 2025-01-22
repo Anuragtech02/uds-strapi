@@ -19,13 +19,23 @@ module.exports = ({ env }) => ({
       },
       blog: {
         settings: {
-          filterableAttributes: ["publishedAt", "oldPublishedAt"],
+          filterableAttributes: [
+            "industries.slug",
+            "geographies.slug",
+            "publishedAt",
+            "oldPublishedAt",
+          ],
           sortableAttributes: ["publishedAt", "oldPublishedAt"],
         },
       },
       "news-article": {
         settings: {
-          filterableAttributes: ["publishedAt", "oldPublishedAt"],
+          filterableAttributes: [
+            "industries.slug",
+            "geographies.slug",
+            "publishedAt",
+            "oldPublishedAt",
+          ],
           sortableAttributes: ["publishedAt", "oldPublishedAt"],
         },
       },
