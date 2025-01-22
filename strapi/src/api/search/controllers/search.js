@@ -36,28 +36,33 @@ module.exports = {
           offset: (parseInt(page) - 1) * parseInt(limit),
         };
 
-        // Add filters for reports
+        // Add filters for reports - using AND logic
         if (indexUid === "report") {
           const filters = [];
 
+          // Create AND condition for industries
           if (industryFilters.length > 0) {
-            filters.push(
-              `industries.slug IN ["${industryFilters.join('","')}"]`
-            );
+            const industriesFilter = industryFilters
+              .map((slug) => `industries.slug = "${slug}"`)
+              .join(" AND ");
+            filters.push(`(${industriesFilter})`);
           }
 
+          // Create AND condition for geographies
           if (geographyFilters.length > 0) {
-            filters.push(
-              `geographies.slug IN ["${geographyFilters.join('","')}"]`
-            );
+            const geographiesFilter = geographyFilters
+              .map((slug) => `geographies.slug = "${slug}"`)
+              .join(" AND ");
+            filters.push(`(${geographiesFilter})`);
           }
 
+          // Combine all filters with AND
           if (filters.length > 0) {
             query.filter = filters.join(" AND ");
           }
 
-          // Add sorting
-          if (sortBy !== "relevance") {
+          // Add sorting for reports
+          if (sortBy && sortBy !== "relevance") {
             query.sort = [
               sortBy === "date_desc" ? "publishedAt:desc" : "publishedAt:asc",
             ];
@@ -76,6 +81,8 @@ module.exports = {
 
         return query;
       });
+
+      console.log("Meilisearch query:", JSON.stringify(queries, null, 2));
 
       // Perform the multiSearch
       const { results } = await meilisearch.multiSearch({ queries });
