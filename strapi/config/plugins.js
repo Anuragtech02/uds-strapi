@@ -8,6 +8,12 @@ module.exports = ({ env }) => ({
     config: {
       report: {
         settings: {
+          searchableAttributes: [
+            "title", // highest priority
+            "shortDescription", // second priority
+            "industries.name",
+            "geographies.name",
+          ],
           filterableAttributes: [
             "industries.slug",
             "geographies.slug",
@@ -15,10 +21,28 @@ module.exports = ({ env }) => ({
             "oldPublishedAt",
           ],
           sortableAttributes: ["publishedAt", "oldPublishedAt"],
+          // Optional: You can also set specific weights using ranking rules
+          rankingRules: [
+            "words",
+            "typo",
+            "proximity",
+            "attribute",
+            "sort",
+            "exactness",
+          ],
+          // Optional: Configure word splitting and proximity
+          distinctAttribute: null,
+          proximityPrecision: 1,
         },
       },
       blog: {
         settings: {
+          searchableAttributes: [
+            "title",
+            "shortDescription",
+            "industries.name",
+            "geographies.name",
+          ],
           filterableAttributes: [
             "industries.slug",
             "geographies.slug",
@@ -26,10 +50,24 @@ module.exports = ({ env }) => ({
             "oldPublishedAt",
           ],
           sortableAttributes: ["publishedAt", "oldPublishedAt"],
+          rankingRules: [
+            "words",
+            "typo",
+            "proximity",
+            "attribute",
+            "sort",
+            "exactness",
+          ],
         },
       },
       "news-article": {
         settings: {
+          searchableAttributes: [
+            "title",
+            "shortDescription",
+            "industries.name",
+            "geographies.name",
+          ],
           filterableAttributes: [
             "industries.slug",
             "geographies.slug",
@@ -37,6 +75,14 @@ module.exports = ({ env }) => ({
             "oldPublishedAt",
           ],
           sortableAttributes: ["publishedAt", "oldPublishedAt"],
+          rankingRules: [
+            "words",
+            "typo",
+            "proximity",
+            "attribute",
+            "sort",
+            "exactness",
+          ],
         },
       },
     },
