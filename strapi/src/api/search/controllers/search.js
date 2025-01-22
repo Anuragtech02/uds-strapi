@@ -60,26 +60,13 @@ module.exports = {
           if (filters.length > 0) {
             query.filter = filters.join(" AND ");
           }
-
-          // Add sorting for reports
-          if (sortBy && sortBy !== "relevance") {
-            query.sort = [
-              sortBy === "date_desc" ? "publishedAt:desc" : "publishedAt:asc",
-            ];
-          }
         }
-
-        // Add sort for blogs and news
-        // if (
-        //   ["blog", "news-article"].includes(indexUid) &&
-        //   sortBy !== "relevance"
-        // ) {
-        //   query.sort = [
-        //     sortBy === "date_desc" ? "publishedAt:desc" : "publishedAt:asc",
-        //   ];
-        // }
         if (sortBy && sortBy !== "relevance") {
-          query.sort = [sortBy]; // Now we can use the sortBy value directly since it includes the field and direction
+          const direction = sortBy.includes(":desc") ? "desc" : "asc";
+          query.sort = [
+            `oldPublishedAt:${direction}`,
+            `publishedAt:${direction}`,
+          ];
         }
 
         return query;

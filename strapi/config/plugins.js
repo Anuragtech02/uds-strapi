@@ -12,20 +12,21 @@ module.exports = ({ env }) => ({
             "industries.slug",
             "geographies.slug",
             "publishedAt",
+            "oldPublishedAt",
           ],
-          sortableAttributes: ["publishedAt"],
+          sortableAttributes: ["publishedAt", "oldPublishedAt"],
         },
       },
       blog: {
         settings: {
-          filterableAttributes: ["publishedAt"],
-          sortableAttributes: ["publishedAt"],
+          filterableAttributes: ["publishedAt", "oldPublishedAt"],
+          sortableAttributes: ["publishedAt", "oldPublishedAt"],
         },
       },
       "news-article": {
         settings: {
-          filterableAttributes: ["publishedAt"],
-          sortableAttributes: ["publishedAt"],
+          filterableAttributes: ["publishedAt", "oldPublishedAt"],
+          sortableAttributes: ["publishedAt", "oldPublishedAt"],
         },
       },
     },
