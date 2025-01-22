@@ -70,13 +70,16 @@ module.exports = {
         }
 
         // Add sort for blogs and news
-        if (
-          ["blog", "news-article"].includes(indexUid) &&
-          sortBy !== "relevance"
-        ) {
-          query.sort = [
-            sortBy === "date_desc" ? "publishedAt:desc" : "publishedAt:asc",
-          ];
+        // if (
+        //   ["blog", "news-article"].includes(indexUid) &&
+        //   sortBy !== "relevance"
+        // ) {
+        //   query.sort = [
+        //     sortBy === "date_desc" ? "publishedAt:desc" : "publishedAt:asc",
+        //   ];
+        // }
+        if (sortBy && sortBy !== "relevance") {
+          query.sort = [sortBy]; // Now we can use the sortBy value directly since it includes the field and direction
         }
 
         return query;

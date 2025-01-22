@@ -195,58 +195,6 @@ export interface ReportPriceItem extends Schema.Component {
   };
 }
 
-export interface HomeStatsCard extends Schema.Component {
-  collectionName: 'components_home_stats_cards';
-  info: {
-    displayName: 'Stats Card';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    countFrom: Attribute.Integer & Attribute.Required;
-    countTo: Attribute.Integer & Attribute.Required;
-    icon: Attribute.Media<'images'> & Attribute.Required;
-  };
-}
-
-export interface AboutPageVIsionMissionCard extends Schema.Component {
-  collectionName: 'components_about_page_v_ision_mission_cards';
-  info: {
-    displayName: 'VIsion Mission Card';
-    icon: 'grid';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    description: Attribute.String & Attribute.Required;
-    image: Attribute.Media<'images'> & Attribute.Required;
-  };
-}
-
-export interface FooterFooterCta extends Schema.Component {
-  collectionName: 'components_footer_footer_ctas';
-  info: {
-    displayName: 'Footer CTA';
-    description: '';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    description: Attribute.Text & Attribute.Required;
-    ctaButton: Attribute.Component<'utils.navigation-link'> &
-      Attribute.Required;
-  };
-}
-
-export interface FooterCompanyInfo extends Schema.Component {
-  collectionName: 'components_footer_company_infos';
-  info: {
-    displayName: 'Company Info';
-    description: '';
-  };
-  attributes: {
-    companyDescription: Attribute.Text & Attribute.Required;
-    logo: Attribute.Media<'images'> & Attribute.Required;
-  };
-}
-
 export interface OrderBillingDetails extends Schema.Component {
   collectionName: 'components_order_billing_details';
   info: {
@@ -278,6 +226,58 @@ export interface OrderBillingDetails extends Schema.Component {
   };
 }
 
+export interface HomeStatsCard extends Schema.Component {
+  collectionName: 'components_home_stats_cards';
+  info: {
+    displayName: 'Stats Card';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    countFrom: Attribute.Integer & Attribute.Required;
+    countTo: Attribute.Integer & Attribute.Required;
+    icon: Attribute.Media<'images'> & Attribute.Required;
+  };
+}
+
+export interface FooterFooterCta extends Schema.Component {
+  collectionName: 'components_footer_footer_ctas';
+  info: {
+    displayName: 'Footer CTA';
+    description: '';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    description: Attribute.Text & Attribute.Required;
+    ctaButton: Attribute.Component<'utils.navigation-link'> &
+      Attribute.Required;
+  };
+}
+
+export interface FooterCompanyInfo extends Schema.Component {
+  collectionName: 'components_footer_company_infos';
+  info: {
+    displayName: 'Company Info';
+    description: '';
+  };
+  attributes: {
+    companyDescription: Attribute.Text & Attribute.Required;
+    logo: Attribute.Media<'images'> & Attribute.Required;
+  };
+}
+
+export interface AboutPageVIsionMissionCard extends Schema.Component {
+  collectionName: 'components_about_page_v_ision_mission_cards';
+  info: {
+    displayName: 'VIsion Mission Card';
+    icon: 'grid';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    description: Attribute.String & Attribute.Required;
+    image: Attribute.Media<'images'> & Attribute.Required;
+  };
+}
+
 declare module '@strapi/types' {
   export module Shared {
     export interface Components {
@@ -291,11 +291,11 @@ declare module '@strapi/types' {
       'shared.meta-social': SharedMetaSocial;
       'report.product-variant': ReportProductVariant;
       'report.price-item': ReportPriceItem;
+      'order.billing-details': OrderBillingDetails;
       'home.stats-card': HomeStatsCard;
-      'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
       'footer.footer-cta': FooterFooterCta;
       'footer.company-info': FooterCompanyInfo;
-      'order.billing-details': OrderBillingDetails;
+      'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
     }
   }
 }
