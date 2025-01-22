@@ -32,7 +32,7 @@ module.exports = ({ env }) => ({
           ],
           // Optional: Configure word splitting and proximity
           distinctAttribute: null,
-          proximityPrecision: 1,
+          proximityPrecision: "byWord",
         },
       },
       blog: {
