@@ -5,12 +5,29 @@ module.exports = ({ env }) => ({
     },
   },
   meilisearch: {
-    active: true,
     config: {
-      // Your meili host
-      host: env("MEILISEARCH_HOST", "http://localhost:7700"),
-      // Your master key or private key
-      apiKey: env("MEILISEARCH_MASTER_KEY", "STRAPI_UNIVDATOS_SEARCH"),
+      report: {
+        settings: {
+          filterableAttributes: [
+            "industries.slug",
+            "geographies.slug",
+            "publishedAt",
+          ],
+          sortableAttributes: ["publishedAt"],
+        },
+      },
+      blog: {
+        settings: {
+          filterableAttributes: ["publishedAt"],
+          sortableAttributes: ["publishedAt"],
+        },
+      },
+      "news-article": {
+        settings: {
+          filterableAttributes: ["publishedAt"],
+          sortableAttributes: ["publishedAt"],
+        },
+      },
     },
   },
   seo: {

@@ -208,6 +208,19 @@ export interface HomeStatsCard extends Schema.Component {
   };
 }
 
+export interface AboutPageVIsionMissionCard extends Schema.Component {
+  collectionName: 'components_about_page_v_ision_mission_cards';
+  info: {
+    displayName: 'VIsion Mission Card';
+    icon: 'grid';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    description: Attribute.String & Attribute.Required;
+    image: Attribute.Media<'images'> & Attribute.Required;
+  };
+}
+
 export interface FooterFooterCta extends Schema.Component {
   collectionName: 'components_footer_footer_ctas';
   info: {
@@ -231,19 +244,6 @@ export interface FooterCompanyInfo extends Schema.Component {
   attributes: {
     companyDescription: Attribute.Text & Attribute.Required;
     logo: Attribute.Media<'images'> & Attribute.Required;
-  };
-}
-
-export interface AboutPageVIsionMissionCard extends Schema.Component {
-  collectionName: 'components_about_page_v_ision_mission_cards';
-  info: {
-    displayName: 'VIsion Mission Card';
-    icon: 'grid';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    description: Attribute.String & Attribute.Required;
-    image: Attribute.Media<'images'> & Attribute.Required;
   };
 }
 
@@ -292,9 +292,9 @@ declare module '@strapi/types' {
       'report.product-variant': ReportProductVariant;
       'report.price-item': ReportPriceItem;
       'home.stats-card': HomeStatsCard;
+      'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
       'footer.footer-cta': FooterFooterCta;
       'footer.company-info': FooterCompanyInfo;
-      'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
       'order.billing-details': OrderBillingDetails;
     }
   }
