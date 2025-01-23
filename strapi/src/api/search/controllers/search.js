@@ -86,10 +86,11 @@ module.exports = {
       ctx.body = {
         query: q,
         results: formattedResults,
-        total: results.reduce(
-          (sum, result) => sum + result.estimatedTotalHits,
-          0
-        ),
+        totals: {
+          report: results[0].estimatedTotalHits,
+          "news-article": results[1].estimatedTotalHits,
+          blog: results[2].estimatedTotalHits,
+        },
         page: parseInt(page),
         limit: parseInt(limit),
       };
