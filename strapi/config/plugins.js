@@ -30,13 +30,13 @@ module.exports = ({ env }) => ({
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: ["exactness", "words"],
           // distinctAttribute: null,
-          // typoTolerance: {
-          //   enabled: true,
-          //   minWordSizeForTypos: {
-          //     oneTypo: 5,
-          //     twoTypos: 9,
-          //   },
-          // },
+          typoTolerance: {
+            enabled: false,
+            // minWordSizeForTypos: {
+            //   oneTypo: 5,
+            //   twoTypos: 9,
+            // },
+          },
         },
       },
       blog: {
