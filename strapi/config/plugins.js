@@ -17,6 +17,9 @@ module.exports = ({ env }) => ({
           displayedAttributes: [
             "title",
             "shortDescription",
+            "slug",
+            "highlightImage",
+            "oldPublishedAt",
             // "industries.name",
             // "geographies.name",
           ],
@@ -28,8 +31,8 @@ module.exports = ({ env }) => ({
           ],
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: [
-            "words",
             "exactness",
+            "words",
             "typo",
             "proximity",
             "attribute",
