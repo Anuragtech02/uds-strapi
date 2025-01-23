@@ -10,17 +10,8 @@ module.exports = ({ env }) => ({
         settings: {
           searchableAttributes: [
             "title", // Boost title importance significantly
-            "shortDescription",
+            // "shortDescription",
           ],
-          // displayedAttributes: [
-          //   "title",
-          //   "shortDescription",
-          //   "slug",
-          //   "highlightImage",
-          //   "oldPublishedAt",
-          //   // "industries.name",
-          //   // "geographies.name",
-          // ],
           filterableAttributes: [
             "industries.slug",
             "geographies.slug",
@@ -28,7 +19,7 @@ module.exports = ({ env }) => ({
             "publishedAt",
           ],
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
-          rankingRules: ["exactness", "words", "oldPublishedAt:asc"],
+          rankingRules: ["title", "exactness", "words", "promximity"],
           // distinctAttribute: null,
           typoTolerance: {
             enabled: false,
