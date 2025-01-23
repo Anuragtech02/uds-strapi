@@ -11,8 +11,14 @@ module.exports = ({ env }) => ({
           searchableAttributes: [
             "title",
             "shortDescription",
-            "industries.name",
-            "geographies.name",
+            // "industries.name",
+            // "geographies.name",
+          ],
+          displayAttributes: [
+            "title",
+            "shortDescription",
+            // "industries.name",
+            // "geographies.name",
           ],
           filterableAttributes: [
             "industries.slug",
