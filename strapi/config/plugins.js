@@ -9,10 +9,10 @@ module.exports = ({ env }) => ({
       report: {
         settings: {
           searchableAttributes: [
-            "title:100", // Give title matches much higher weight
-            "shortDescription:10", // Give description matches medium weight
-            "industries.name:1", // Give other fields lower weight
-            "geographies.name:1",
+            "title",
+            "shortDescription",
+            "industries.name",
+            "geographies.name",
           ],
           filterableAttributes: [
             "industries.slug",
@@ -21,27 +21,42 @@ module.exports = ({ env }) => ({
             "publishedAt",
           ],
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
-          // Optional: You can also set specific weights using ranking rules
           rankingRules: [
             "words",
+            "exactness",
             "typo",
             "proximity",
             "attribute",
             "sort",
-            "exactness",
           ],
-          // Optional: Configure word splitting and proximity
-          // distinctAttribute: null,
-          proximityPrecision: "byWord",
+          distinctAttribute: null,
+          typoTolerance: {
+            enabled: true,
+            minWordSizeForTypos: {
+              oneTypo: 5,
+              twoTypos: 9,
+            },
+          },
+        },
+        entriesQuery: {
+          locale: "en", // Since you only have English content
+          populate: {
+            industries: {
+              fields: ["name", "slug"],
+            },
+            geographies: {
+              fields: ["name", "slug"],
+            },
+          },
         },
       },
       blog: {
         settings: {
           searchableAttributes: [
-            "title:100", // Give title matches much higher weight
-            "shortDescription:10", // Give description matches medium weight
-            "industries.name:1", // Give other fields lower weight
-            "geographies.name:1",
+            "title",
+            "shortDescription",
+            "industries.name",
+            "geographies.name",
           ],
           filterableAttributes: [
             "industries.slug",
@@ -52,21 +67,40 @@ module.exports = ({ env }) => ({
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: [
             "words",
+            "exactness",
             "typo",
             "proximity",
             "attribute",
             "sort",
-            "exactness",
           ],
+          distinctAttribute: null,
+          typoTolerance: {
+            enabled: true,
+            minWordSizeForTypos: {
+              oneTypo: 5,
+              twoTypos: 9,
+            },
+          },
+        },
+        entriesQuery: {
+          locale: "en", // Since you only have English content
+          populate: {
+            industries: {
+              fields: ["name", "slug"],
+            },
+            geographies: {
+              fields: ["name", "slug"],
+            },
+          },
         },
       },
       "news-article": {
         settings: {
           searchableAttributes: [
-            "title:100", // Give title matches much higher weight
-            "shortDescription:10", // Give description matches medium weight
-            "industries.name:1", // Give other fields lower weight
-            "geographies.name:1",
+            "title",
+            "shortDescription",
+            "industries.name",
+            "geographies.name",
           ],
           filterableAttributes: [
             "industries.slug",
@@ -77,12 +111,31 @@ module.exports = ({ env }) => ({
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: [
             "words",
+            "exactness",
             "typo",
             "proximity",
             "attribute",
             "sort",
-            "exactness",
           ],
+          distinctAttribute: null,
+          typoTolerance: {
+            enabled: true,
+            minWordSizeForTypos: {
+              oneTypo: 5,
+              twoTypos: 9,
+            },
+          },
+        },
+        entriesQuery: {
+          locale: "en", // Since you only have English content
+          populate: {
+            industries: {
+              fields: ["name", "slug"],
+            },
+            geographies: {
+              fields: ["name", "slug"],
+            },
+          },
         },
       },
     },
