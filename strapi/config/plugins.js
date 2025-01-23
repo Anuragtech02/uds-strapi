@@ -9,20 +9,18 @@ module.exports = ({ env }) => ({
       report: {
         settings: {
           searchableAttributes: [
-            "title",
-            "shortDescription",
-            // "industries.name",
-            // "geographies.name",
+            "title:100", // Boost title importance significantly
+            "shortDescription:10",
           ],
-          displayedAttributes: [
-            "title",
-            "shortDescription",
-            "slug",
-            "highlightImage",
-            "oldPublishedAt",
-            // "industries.name",
-            // "geographies.name",
-          ],
+          // displayedAttributes: [
+          //   "title",
+          //   "shortDescription",
+          //   "slug",
+          //   "highlightImage",
+          //   "oldPublishedAt",
+          //   // "industries.name",
+          //   // "geographies.name",
+          // ],
           filterableAttributes: [
             "industries.slug",
             "geographies.slug",
@@ -31,12 +29,12 @@ module.exports = ({ env }) => ({
           ],
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: [
-            "exactness",
+            "exactness", // Move exactness to top priority
+            "attribute", // Then attribute (which respects our title:100 weight)
             "words",
             "typo",
             "proximity",
-            "attribute",
-            "sort",
+            "sort", // Move sort to lowest priority
           ],
           distinctAttribute: null,
           typoTolerance: {
