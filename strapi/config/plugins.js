@@ -19,15 +19,18 @@ module.exports = ({ env }) => ({
             "publishedAt",
           ],
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
-          rankingRules: ["attribute", "exactness", "words", "proximity"],
-          // distinctAttribute: null,
+          rankingRules: [
+            "exactness",
+            "words",
+            "attribute",
+            "proximity",
+            // "sort"
+          ],
           typoTolerance: {
             enabled: false,
-            // minWordSizeForTypos: {
-            //   oneTypo: 5,
-            //   twoTypos: 9,
-            // },
           },
+          stopWords: [],
+          // distinctAttribute: null,
         },
       },
       blog: {
