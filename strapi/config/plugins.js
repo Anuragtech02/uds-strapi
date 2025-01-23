@@ -14,7 +14,7 @@ module.exports = ({ env }) => ({
             // "industries.name",
             // "geographies.name",
           ],
-          displayAttributes: [
+          displayedAttributes: [
             "title",
             "shortDescription",
             // "industries.name",
