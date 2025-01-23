@@ -28,7 +28,7 @@ module.exports = ({ env }) => ({
             "publishedAt",
           ],
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
-          rankingRules: ["exactness", "words"],
+          rankingRules: ["exactness", "words", "oldPublishedAt:desc"],
           // distinctAttribute: null,
           typoTolerance: {
             enabled: false,
