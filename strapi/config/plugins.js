@@ -28,26 +28,15 @@ module.exports = ({ env }) => ({
             "publishedAt",
           ],
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
-          rankingRules: ["exactness", "attribute"],
-          distinctAttribute: null,
-          typoTolerance: {
-            enabled: true,
-            minWordSizeForTypos: {
-              oneTypo: 5,
-              twoTypos: 9,
-            },
-          },
-        },
-        entriesQuery: {
-          locale: "en", // Since you only have English content
-          populate: {
-            industries: {
-              fields: ["name", "slug"],
-            },
-            geographies: {
-              fields: ["name", "slug"],
-            },
-          },
+          rankingRules: ["exactness", "words"],
+          // distinctAttribute: null,
+          // typoTolerance: {
+          //   enabled: true,
+          //   minWordSizeForTypos: {
+          //     oneTypo: 5,
+          //     twoTypos: 9,
+          //   },
+          // },
         },
       },
       blog: {
