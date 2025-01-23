@@ -9,8 +9,8 @@ module.exports = ({ env }) => ({
       report: {
         settings: {
           searchableAttributes: [
-            "title:100", // Boost title importance significantly
-            "shortDescription:10",
+            "title", // Boost title importance significantly
+            "shortDescription",
           ],
           // displayedAttributes: [
           //   "title",
