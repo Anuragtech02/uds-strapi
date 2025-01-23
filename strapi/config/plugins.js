@@ -28,14 +28,7 @@ module.exports = ({ env }) => ({
             "publishedAt",
           ],
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
-          rankingRules: [
-            "exactness", // Move exactness to top priority
-            "attribute", // Then attribute (which respects our title:100 weight)
-            "words",
-            "typo",
-            "proximity",
-            "sort", // Move sort to lowest priority
-          ],
+          rankingRules: ["exactness", "attribute"],
           distinctAttribute: null,
           typoTolerance: {
             enabled: true,
