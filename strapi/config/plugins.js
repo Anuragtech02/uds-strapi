@@ -9,10 +9,10 @@ module.exports = ({ env }) => ({
       report: {
         settings: {
           searchableAttributes: [
-            "title", // highest priority
-            "shortDescription", // second priority
-            "industries.name",
-            "geographies.name",
+            "title:100", // Give title matches much higher weight
+            "shortDescription:10", // Give description matches medium weight
+            "industries.name:1", // Give other fields lower weight
+            "geographies.name:1",
           ],
           filterableAttributes: [
             "industries.slug",
@@ -38,10 +38,10 @@ module.exports = ({ env }) => ({
       blog: {
         settings: {
           searchableAttributes: [
-            "title",
-            "shortDescription",
-            "industries.name",
-            "geographies.name",
+            "title:100", // Give title matches much higher weight
+            "shortDescription:10", // Give description matches medium weight
+            "industries.name:1", // Give other fields lower weight
+            "geographies.name:1",
           ],
           filterableAttributes: [
             "industries.slug",
@@ -63,10 +63,10 @@ module.exports = ({ env }) => ({
       "news-article": {
         settings: {
           searchableAttributes: [
-            "title",
-            "shortDescription",
-            "industries.name",
-            "geographies.name",
+            "title:100", // Give title matches much higher weight
+            "shortDescription:10", // Give description matches medium weight
+            "industries.name:1", // Give other fields lower weight
+            "geographies.name:1",
           ],
           filterableAttributes: [
             "industries.slug",
