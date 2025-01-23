@@ -23,12 +23,12 @@ module.exports = ({ env }) => ({
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           // Optional: You can also set specific weights using ranking rules
           rankingRules: [
-            "exactness",
             "words",
             "typo",
             "proximity",
             "attribute",
             "sort",
+            "exactness",
           ],
           // Optional: Configure word splitting and proximity
           // distinctAttribute: null,
@@ -51,12 +51,12 @@ module.exports = ({ env }) => ({
           ],
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: [
-            "exactness",
             "words",
             "typo",
             "proximity",
             "attribute",
             "sort",
+            "exactness",
           ],
         },
       },
@@ -76,12 +76,12 @@ module.exports = ({ env }) => ({
           ],
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: [
-            "exactness",
             "words",
             "typo",
             "proximity",
             "attribute",
             "sort",
+            "exactness",
           ],
         },
       },
