@@ -28,11 +28,10 @@ module.exports = {
         : [];
 
       // Prepare the queries for multiSearch
-      const searchQuery = `"${q}"`; // Wrap the query in quotes for exact phrase matching
       const queries = indices.map((indexUid) => {
         let query = {
           indexUid,
-          q: searchQuery,
+          q,
           limit: parseInt(limit),
           offset: (parseInt(page) - 1) * parseInt(limit),
         };
