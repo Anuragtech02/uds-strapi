@@ -32,7 +32,7 @@ module.exports = {
       const queries = indices.map((indexUid) => {
         let query = {
           indexUid,
-          searchQuery,
+          q: searchQuery,
           limit: parseInt(limit),
           offset: (parseInt(page) - 1) * parseInt(limit),
         };
