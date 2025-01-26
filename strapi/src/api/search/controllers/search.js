@@ -33,7 +33,8 @@ module.exports = {
           indexUid,
           q,
           limit: parseInt(limit),
-          matchingStrategy: "all",
+          matchingStrategy: "frequency",
+          showRankingScoreDetails: true,
           offset: (parseInt(page) - 1) * parseInt(limit),
         };
 
@@ -77,6 +78,8 @@ module.exports = {
 
       // Perform the multiSearch
       const { results } = await meilisearch.multiSearch({ queries });
+
+      console.log("Results:", results);
 
       // Format the results
       const formattedResults = results.reduce((acc, result, index) => {
