@@ -33,6 +33,7 @@ module.exports = {
           indexUid,
           q,
           limit: parseInt(limit),
+          matchingStrategy: "all",
           offset: (parseInt(page) - 1) * parseInt(limit),
         };
 
