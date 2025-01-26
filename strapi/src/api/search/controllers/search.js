@@ -79,7 +79,7 @@ module.exports = {
       // Perform the multiSearch
       const { results } = await meilisearch.multiSearch({ queries });
 
-      console.log("Results:", results);
+      console.log("Results:", results[0].hits);
 
       // Format the results
       const formattedResults = results.reduce((acc, result, index) => {
