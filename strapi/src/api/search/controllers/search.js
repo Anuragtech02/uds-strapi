@@ -75,16 +75,8 @@ module.exports = {
         return query;
       });
 
-      console.log("Meilisearch query:", JSON.stringify(queries, null, 2));
-
       // Perform the multiSearch
       const { results } = await meilisearch.multiSearch({ queries });
-
-      console.log("Results:");
-      results[0].hits.forEach((hit) => {
-        console.log("Title:", hit.title);
-        console.log("Ranking Score Details:", hit._rankingScoreDetails);
-      });
 
       // Format the results
       const formattedResults = results.reduce((acc, result, index) => {
