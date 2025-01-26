@@ -12,6 +12,15 @@ module.exports = ({ env }) => ({
             "title", // Boost title importance significantly
             // "shortDescription",
           ],
+          displayedAttributes: [
+            "title",
+            "shortDescription",
+            "slug",
+            "highlightImage",
+            "oldPublishedAt",
+            // "industries.name",
+            // "geographies.name",
+          ],
           filterableAttributes: [
             "industries.slug",
             "geographies.slug",
@@ -20,26 +29,30 @@ module.exports = ({ env }) => ({
           ],
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: [
-            "exactness",
             "words",
-            "attribute",
+            "exactness",
+            "typo",
             "proximity",
+            "attribute",
             "sort",
           ],
-          typoTolerance: {
-            enabled: false,
-          },
-          stopWords: [],
           // distinctAttribute: null,
+          typoTolerance: {
+            enabled: true,
+            minWordSizeForTypos: {
+              oneTypo: 5,
+              twoTypos: 9,
+            },
+          },
         },
       },
       blog: {
         settings: {
           searchableAttributes: [
             "title",
-            "shortDescription",
-            "industries.name",
-            "geographies.name",
+            // "shortDescription",
+            // "industries.name",
+            // "geographies.name",
           ],
           filterableAttributes: [
             "industries.slug",
@@ -81,9 +94,9 @@ module.exports = ({ env }) => ({
         settings: {
           searchableAttributes: [
             "title",
-            "shortDescription",
-            "industries.name",
-            "geographies.name",
+            // "shortDescription",
+            // "industries.name",
+            // "geographies.name",
           ],
           filterableAttributes: [
             "industries.slug",

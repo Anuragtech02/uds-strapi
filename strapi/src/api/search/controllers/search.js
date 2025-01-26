@@ -33,8 +33,8 @@ module.exports = {
           indexUid,
           q: decodeURIComponent(q),
           limit: parseInt(limit),
-          matchingStrategy: "all",
-          showRankingScoreDetails: true,
+          // matchingStrategy: "all",
+          // showRankingScoreDetails: true,
           offset: (parseInt(page) - 1) * parseInt(limit),
         };
 
