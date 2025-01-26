@@ -13,12 +13,12 @@ module.exports = ({ env }) => ({
             // "shortDescription",
           ],
           filterableAttributes: [
-            "industries.slug",
-            "geographies.slug",
-            "oldPublishedAt",
+            // "industries.slug",
+            // "geographies.slug",
+            // "oldPublishedAt",
             "publishedAt",
           ],
-          sortableAttributes: ["oldPublishedAt", "publishedAt"],
+          // sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: [
             "exactness",
             "words",
