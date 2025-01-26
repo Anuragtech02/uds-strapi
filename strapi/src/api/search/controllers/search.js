@@ -31,7 +31,7 @@ module.exports = {
       const queries = indices.map((indexUid) => {
         let query = {
           indexUid,
-          q,
+          q: decodeURIComponent(q),
           limit: parseInt(limit),
           matchingStrategy: "all",
           showRankingScoreDetails: true,
