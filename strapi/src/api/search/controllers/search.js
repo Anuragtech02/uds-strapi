@@ -34,6 +34,7 @@ module.exports = {
           q: decodeURIComponent(q),
           limit: parseInt(limit),
           // matchingStrategy: "all",
+          rankingScoreThreshold: 0.5,
           // showRankingScoreDetails: true,
           offset: (parseInt(page) - 1) * parseInt(limit),
         };
