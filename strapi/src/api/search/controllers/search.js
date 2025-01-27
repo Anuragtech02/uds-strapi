@@ -89,8 +89,8 @@ module.exports = {
         results: formattedResults,
         totals: {
           report: results[0].estimatedTotalHits,
-          "news-article": results[1].estimatedTotalHits,
-          blog: results[2].estimatedTotalHits,
+          blog: results[1].estimatedTotalHits,
+          "news-article": results[2].estimatedTotalHits,
         },
         page: parseInt(page),
         limit: parseInt(limit),
