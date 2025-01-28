@@ -2630,7 +2630,7 @@ export interface ApiOrderOrder extends Schema.CollectionType {
       undefined,
       undefined,
       {
-        'uuid-format': '^UNID_[A-Za-z0-9]{8}$';
+        'uuid-format': '';
         'disable-regenerate': true;
         'disable-auto-fill': true;
       }
@@ -2638,7 +2638,7 @@ export interface ApiOrderOrder extends Schema.CollectionType {
       Attribute.CustomField<
         'plugin::strapi-advanced-uuid.uuid',
         {
-          'uuid-format': '^UNID_[A-Za-z0-9]{8}$';
+          'uuid-format': '';
           'disable-regenerate': true;
           'disable-auto-fill': true;
         }
@@ -2657,6 +2657,7 @@ export interface ApiOrderOrder extends Schema.CollectionType {
       Attribute.Required;
     razorpayReceipt: Attribute.String & Attribute.Required & Attribute.Unique;
     manualDiscountAmount: Attribute.Decimal & Attribute.Required;
+    rawData: Attribute.JSON;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
