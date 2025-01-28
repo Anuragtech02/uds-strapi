@@ -2625,19 +2625,22 @@ export interface ApiOrderOrder extends Schema.CollectionType {
     > &
       Attribute.Required &
       Attribute.DefaultTo<'INITIATED'>;
-    taxAmount: Attribute.Component<'report.price-item'> & Attribute.Required;
     totalAmount: Attribute.Component<'report.price-item'>;
-    orderId: Attribute.UID<
+    razorpayOrderId: Attribute.UID<
       undefined,
       undefined,
       {
         'uuid-format': '^UNID_[A-Za-z0-9]{8}$';
+        'disable-regenerate': true;
+        'disable-auto-fill': true;
       }
     > &
       Attribute.CustomField<
         'plugin::strapi-advanced-uuid.uuid',
         {
           'uuid-format': '^UNID_[A-Za-z0-9]{8}$';
+          'disable-regenerate': true;
+          'disable-auto-fill': true;
         }
       >;
     payment: Attribute.Relation<
@@ -2652,6 +2655,8 @@ export interface ApiOrderOrder extends Schema.CollectionType {
     >;
     billingDetails: Attribute.Component<'order.billing-details'> &
       Attribute.Required;
+    razorpayReceipt: Attribute.String & Attribute.Required & Attribute.Unique;
+    manualDiscountAmount: Attribute.Decimal & Attribute.Required;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;

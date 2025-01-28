@@ -29,21 +29,17 @@
       "required": true,
       "default": "INITIATED"
     },
-    "taxAmount": {
-      "type": "component",
-      "repeatable": false,
-      "component": "report.price-item",
-      "required": true
-    },
     "totalAmount": {
       "type": "component",
       "repeatable": false,
       "component": "report.price-item"
     },
-    "orderId": {
+    "razorpayOrderId": {
       "type": "customField",
       "options": {
-        "uuid-format": "^UNID_[A-Za-z0-9]{8}$"
+        "uuid-format": "^UNID_[A-Za-z0-9]{8}$",
+        "disable-regenerate": true,
+        "disable-auto-fill": true
       },
       "customField": "plugin::strapi-advanced-uuid.uuid"
     },
@@ -63,6 +59,15 @@
       "type": "component",
       "repeatable": false,
       "component": "order.billing-details",
+      "required": true
+    },
+    "razorpayReceipt": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "manualDiscountAmount": {
+      "type": "decimal",
       "required": true
     }
   }

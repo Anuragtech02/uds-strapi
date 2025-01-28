@@ -1,5 +1,6 @@
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
+const { v4: uuidv4 } = require("uuid");
 
 module.exports = ({ strapi }) => ({
   createOrder: async (ctx) => {
@@ -16,17 +17,20 @@ module.exports = ({ strapi }) => ({
 
     try {
       const { amount, currency } = ctx.request.body;
+      const uniqueId = uuidv4().split("-")[0]; // Use first part of UUID
+      const receipt = `UDSRC_${uniqueId}`;
 
       const options = {
         amount: amount,
         currency: currency,
-        receipt: "rcp1",
+        receipt: receipt,
       };
 
       const order = await razorpay.orders.create(options);
 
       ctx.body = {
         orderId: order.id,
+        receipt: receipt,
       };
     } catch (err) {
       console.error("Order creation error:", err);
