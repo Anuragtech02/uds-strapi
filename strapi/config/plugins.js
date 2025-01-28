@@ -258,4 +258,18 @@ module.exports = ({ env }) => ({
       ],
     },
   },
+  email: {
+    config: {
+      provider: "amazon-ses",
+      providerOptions: {
+        key: process.env.AWS_SES_KEY,
+        secret: process.env.AWS_SES_SECRET,
+        amazon: process.env.AWS_SES_REGION,
+      },
+      settings: {
+        defaultFrom: "contact@univdatos.com",
+        defaultReplyTo: "contact@univdatos.com",
+      },
+    },
+  },
 });
