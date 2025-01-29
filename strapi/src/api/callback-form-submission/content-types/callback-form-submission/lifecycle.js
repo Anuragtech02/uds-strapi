@@ -1,8 +1,11 @@
 module.exports = {
   async afterCreate(event) {
+    console.log("Running afterCreate lifecycle callback");
     const { result } = event;
     const logoUrl =
       "https://udsweb.s3.ap-south-1.amazonaws.com/UDS_Logo_no_BG_fa9627d31f.png";
+
+    console.log("Result", result);
 
     try {
       await strapi.plugins["email"].services.email.send({
