@@ -264,7 +264,7 @@ module.exports = ({ env }) => ({
       providerOptions: {
         key: process.env.AWS_SES_KEY,
         secret: process.env.AWS_SES_SECRET,
-        amazon: process.env.AWS_SES_REGION,
+        region: process.env.AWS_SES_REGION,
       },
       settings: {
         defaultFrom: "contact@univdatos.com",
