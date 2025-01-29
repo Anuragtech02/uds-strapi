@@ -1,117 +1,119 @@
 module.exports = {
   async afterCreate(event) {
-    console.log("Sending emails after creating a callback form submission");
+    console.log("Processing new form submission for emails");
     const { result } = event;
     const logoUrl =
       "https://udsweb.s3.ap-south-1.amazonaws.com/logo_f2f9595b81.svg";
 
     const emailStyles = `
-      /* Reset styles */
-      body, table, td, div, p {
-        margin: 0;
-        padding: 0;
-        font-family: Arial, sans-serif;
-        line-height: 1.4;
-      }
-      
-      /* Container styles */
+    /* Reset styles */
+    body, table, td, div, p {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      line-height: 1.4;
+    }
+    
+    /* Container styles */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+    }
+    
+    /* Header styles */
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      background-color: #09184C;
+    }
+    
+    .logo {
+      max-width: 200px;
+      height: auto;
+    }
+    
+    /* Content styles */
+    .content {
+      padding: 30px 20px;
+      background-color: #f9f9f9;
+    }
+    
+    .submission-title {
+      color: #09184C;
+      font-size: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    
+    .info-table td {
+      padding: 12px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .info-label {
+      color: #09184C;
+      font-weight: bold;
+      width: 40%;
+    }
+    
+    .info-value {
+      color: #333333;
+    }
+
+    .message-text {
+      color: #333333;
+      margin: 20px 0;
+      line-height: 1.6;
+    }
+    
+    /* Footer styles */
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: #666666;
+      font-size: 12px;
+    }
+    
+    /* Mobile responsiveness */
+    @media only screen and (max-width: 480px) {
       .container {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: #ffffff;
+        width: 100% !important;
+        padding: 10px !important;
       }
       
-      /* Header styles */
-      .header {
-        text-align: center;
-        padding: 20px 0;
-        background-color: #09184C;
-      }
-      
-      .logo {
-        max-width: 200px;
-        height: auto;
-      }
-      
-      /* Content styles */
       .content {
-        padding: 30px 20px;
-        background-color: #f9f9f9;
-      }
-      
-      .submission-title {
-        color: #09184C;
-        font-size: 24px;
-        margin-bottom: 20px;
-        text-align: center;
-      }
-      
-      .info-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
+        padding: 20px 10px !important;
       }
       
       .info-table td {
-        padding: 12px;
-        border-bottom: 1px solid #e0e0e0;
+        display: block;
+        width: 100%;
       }
       
       .info-label {
-        color: #09184C;
-        font-weight: bold;
-        width: 40%;
+        border-bottom: none;
+        padding-bottom: 0;
       }
-      
-      .info-value {
-        color: #333333;
-      }
+    }
+  `;
 
-      .message-text {
-        color: #333333;
-        margin: 20px 0;
-        line-height: 1.6;
-      }
-      
-      /* Footer styles */
-      .footer {
-        text-align: center;
-        padding: 20px;
-        color: #666666;
-        font-size: 12px;
-      }
-      
-      /* Mobile responsiveness */
-      @media only screen and (max-width: 480px) {
-        .container {
-          width: 100% !important;
-          padding: 10px !important;
-        }
-        
-        .content {
-          padding: 20px 10px !important;
-        }
-        
-        .info-table td {
-          display: block;
-          width: 100%;
-        }
-        
-        .info-label {
-          border-bottom: none;
-          padding-bottom: 0;
-        }
-      }
-    `;
-
-    try {
-      // Send notification email to the team
-      await strapi.plugins["email"].services.email.send({
-        to: "contact@univdatos.com",
-        from: "contact@univdatos.com",
-        subject: "New Callback Form Submission",
-        html: `
+    // Function to send team notification email
+    const sendTeamNotification = async () => {
+      try {
+        console.log("Sending notification email to team...");
+        await strapi.plugins["email"].services.email.send({
+          to: "contact@univdatos.com",
+          from: "contact@univdatos.com",
+          subject: "New Callback Form Submission",
+          html: `
           <!DOCTYPE html>
           <html>
             <head>
@@ -204,11 +206,37 @@ module.exports = {
               </div>
             </body>
           </html>
-        `,
-      });
+          `,
+        });
+        console.log("Successfully sent team notification email");
+        return true;
+      } catch (error) {
+        console.error("Failed to send team notification email:", {
+          error: error.message,
+          stack: error.stack,
+          submission: {
+            name: result.fullName,
+            email: result.businessEmail,
+            timestamp: new Date().toISOString(),
+          },
+        });
+        return false;
+      }
+    };
 
-      // Send acknowledgment email to the user
-      if (result.businessEmail) {
+    // Function to send user acknowledgment email
+    const sendUserAcknowledgment = async () => {
+      if (!result.businessEmail) {
+        console.log(
+          "No business email provided, skipping acknowledgment email"
+        );
+        return false;
+      }
+
+      try {
+        console.log(
+          `Sending acknowledgment email to user: ${result.businessEmail}`
+        );
         await strapi.plugins["email"].services.email.send({
           to: result.businessEmail,
           from: "contact@univdatos.com",
@@ -248,9 +276,50 @@ module.exports = {
             </html>
           `,
         });
+        console.log("Successfully sent acknowledgment email to user");
+        return true;
+      } catch (error) {
+        console.error("Failed to send user acknowledgment email:", {
+          error: error.message,
+          stack: error.stack,
+          recipient: result.businessEmail,
+          timestamp: new Date().toISOString(),
+        });
+        return false;
       }
+    };
+
+    // Send both emails independently
+    const results = await Promise.allSettled([
+      sendTeamNotification(),
+      sendUserAcknowledgment(),
+    ]);
+
+    // Log overall results
+    const [teamEmailResult, userEmailResult] = results;
+    console.log("Email sending completed with results:", {
+      teamNotification:
+        teamEmailResult.status === "fulfilled" ? "success" : "failed",
+      userAcknowledgment:
+        userEmailResult.status === "fulfilled" ? "success" : "failed",
+      timestamp: new Date().toISOString(),
+      submissionId: result.id,
+    });
+
+    // Optionally, you could store the email sending status in your database
+    try {
+      await strapi.query("api::form-submission.form-submission").update({
+        where: { id: result.id },
+        data: {
+          emailStatus: {
+            teamNotificationSent: teamEmailResult.status === "fulfilled",
+            userAcknowledgmentSent: userEmailResult.status === "fulfilled",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      });
     } catch (error) {
-      console.error("Error sending email:", error);
+      console.error("Failed to update submission with email status:", error);
     }
   },
 };
