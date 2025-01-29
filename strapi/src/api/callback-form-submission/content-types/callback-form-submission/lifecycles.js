@@ -5,8 +5,6 @@ module.exports = {
     const logoUrl =
       "https://udsweb.s3.ap-south-1.amazonaws.com/logo_f2f9595b81.svg";
 
-    console.log("Result", result);
-
     try {
       await strapi.plugins["email"].services.email.send({
         to: "apal895@gmail.com",
