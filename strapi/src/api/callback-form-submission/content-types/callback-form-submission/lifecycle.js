@@ -6,7 +6,7 @@ module.exports = {
 
     try {
       await strapi.plugins["email"].services.email.send({
-        to: "contact@univdatos.com",
+        to: "apal895@gmail.com",
         from: "contact@univdatos.com",
         subject: "New Callback Form Submission",
         html: `
