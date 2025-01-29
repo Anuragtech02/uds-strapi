@@ -3,7 +3,7 @@ module.exports = {
     console.log("Running afterCreate lifecycle callback");
     const { result } = event;
     const logoUrl =
-      "https://udsweb.s3.ap-south-1.amazonaws.com/UDS_Logo_no_BG_fa9627d31f.png";
+      "https://udsweb.s3.ap-south-1.amazonaws.com/logo_f2f9595b81.svg";
 
     console.log("Result", result);
 
