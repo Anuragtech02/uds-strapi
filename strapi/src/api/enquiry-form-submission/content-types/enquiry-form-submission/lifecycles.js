@@ -5,6 +5,23 @@ module.exports = {
     const logoUrl =
       "https://udsweb.s3.ap-south-1.amazonaws.com/logo_f2f9595b81.svg";
 
+    // Fetch the complete report data if a report ID exists
+    let reportData = null;
+    if (result.report) {
+      try {
+        reportData = await strapi.entityService.findOne(
+          "api::report.report",
+          result.report,
+          {
+            populate: ["title"], // Add any other fields you need
+          }
+        );
+        console.log("Found report data:", reportData);
+      } catch (error) {
+        console.error("Error fetching report data:", error);
+      }
+    }
+
     const emailStyles = `
         /* Reset styles */
         body, table, td, div, p {
@@ -136,9 +153,9 @@ module.exports = {
                       <h1 class="greeting">New Report Enquiry</h1>
                       
                       <div class="highlight-box">
-                        <div class="report-title">Report: ${
-                          result.report?.title || "Not specified"
-                        }</div>
+                      <div class="report-title">Report: ${
+                        reportData ? reportData.title : "Not specified"
+                      }</div>
                         <p class="message-text">Message: ${
                           result.message || "No message provided"
                         }</p>
@@ -218,9 +235,9 @@ module.exports = {
                       <p class="message-text">Thank you for your interest in our market research report.</p>
   
                       <div class="highlight-box">
-                        <div class="report-title">${
-                          result.report?.title || "Selected Report"
-                        }</div>
+                      <div class="report-title">${
+                        reportData ? reportData.title : "Selected Report"
+                      }</div>
                         <p class="message-text">We have received your enquiry and our team will review it promptly.</p>
                       </div>
   
