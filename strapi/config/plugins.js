@@ -275,7 +275,8 @@ module.exports = ({ env }) => ({
   "import-export-entries": {
     enabled: true,
     config: {
-      // See `Config` section.
+      enableFilter: true,
+      respectPageQueryParameters: true,
     },
   },
 });
