@@ -277,6 +277,14 @@ module.exports = ({ env }) => ({
     config: {
       enableFilter: true,
       respectPageQueryParameters: true,
+      exportOptions: {
+        csv: {
+          useFieldIds: false,
+          exportSelectedOnly: true,
+        },
+      },
+      // Enable for all content types dynamically
+      enableAll: true,
     },
   },
 });
