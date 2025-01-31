@@ -1,64 +1,5 @@
 import type { Schema, Attribute } from '@strapi/strapi';
 
-export interface SharedSeo extends Schema.Component {
-  collectionName: 'components_shared_seos';
-  info: {
-    displayName: 'seo';
-    icon: 'search';
-    description: '';
-  };
-  attributes: {
-    metaTitle: Attribute.String &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        maxLength: 300;
-      }>;
-    metaDescription: Attribute.String &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        minLength: 50;
-        maxLength: 300;
-      }>;
-    metaImage: Attribute.Media<'images' | 'files' | 'videos'>;
-    metaSocial: Attribute.Component<'shared.meta-social', true>;
-    keywords: Attribute.Text;
-    metaRobots: Attribute.String;
-    structuredData: Attribute.JSON;
-    metaViewport: Attribute.String;
-    canonicalURL: Attribute.String;
-    extraScripts: Attribute.Text &
-      Attribute.SetPluginOptions<{
-        translate: {
-          translate: 'copy';
-        };
-      }>;
-  };
-}
-
-export interface SharedMetaSocial extends Schema.Component {
-  collectionName: 'components_shared_meta_socials';
-  info: {
-    displayName: 'metaSocial';
-    icon: 'project-diagram';
-    description: '';
-  };
-  attributes: {
-    socialNetwork: Attribute.Enumeration<['Facebook', 'Twitter']> &
-      Attribute.Required;
-    title: Attribute.String &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        maxLength: 300;
-      }>;
-    description: Attribute.String &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        maxLength: 300;
-      }>;
-    image: Attribute.Media<'images' | 'files' | 'videos'>;
-  };
-}
-
 export interface UtilsSocialLink extends Schema.Component {
   collectionName: 'components_utils_social_links';
   info: {
@@ -150,16 +91,62 @@ export interface UtilsCtaBanner extends Schema.Component {
   };
 }
 
-export interface HomeStatsCard extends Schema.Component {
-  collectionName: 'components_home_stats_cards';
+export interface SharedSeo extends Schema.Component {
+  collectionName: 'components_shared_seos';
   info: {
-    displayName: 'Stats Card';
+    displayName: 'seo';
+    icon: 'search';
+    description: '';
   };
   attributes: {
-    title: Attribute.String & Attribute.Required;
-    countFrom: Attribute.Integer & Attribute.Required;
-    countTo: Attribute.Integer & Attribute.Required;
-    icon: Attribute.Media<'images'> & Attribute.Required;
+    metaTitle: Attribute.String &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        maxLength: 300;
+      }>;
+    metaDescription: Attribute.String &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        minLength: 50;
+        maxLength: 300;
+      }>;
+    metaImage: Attribute.Media<'images' | 'files' | 'videos'>;
+    metaSocial: Attribute.Component<'shared.meta-social', true>;
+    keywords: Attribute.Text;
+    metaRobots: Attribute.String;
+    structuredData: Attribute.JSON;
+    metaViewport: Attribute.String;
+    canonicalURL: Attribute.String;
+    extraScripts: Attribute.Text &
+      Attribute.SetPluginOptions<{
+        translate: {
+          translate: 'copy';
+        };
+      }>;
+  };
+}
+
+export interface SharedMetaSocial extends Schema.Component {
+  collectionName: 'components_shared_meta_socials';
+  info: {
+    displayName: 'metaSocial';
+    icon: 'project-diagram';
+    description: '';
+  };
+  attributes: {
+    socialNetwork: Attribute.Enumeration<['Facebook', 'Twitter']> &
+      Attribute.Required;
+    title: Attribute.String &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        maxLength: 300;
+      }>;
+    description: Attribute.String &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        maxLength: 300;
+      }>;
+    image: Attribute.Media<'images' | 'files' | 'videos'>;
   };
 }
 
@@ -208,6 +195,70 @@ export interface ReportPriceItem extends Schema.Component {
   };
 }
 
+export interface HomeStatsCard extends Schema.Component {
+  collectionName: 'components_home_stats_cards';
+  info: {
+    displayName: 'Stats Card';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    countFrom: Attribute.Integer & Attribute.Required;
+    countTo: Attribute.Integer & Attribute.Required;
+    icon: Attribute.Media<'images'> & Attribute.Required;
+  };
+}
+
+export interface FormEmailStatus extends Schema.Component {
+  collectionName: 'components_form_email_statuses';
+  info: {
+    displayName: 'Email Status';
+  };
+  attributes: {
+    customerAcknowledgmentSent: Attribute.Boolean;
+    salesNotificationSent: Attribute.Boolean;
+    timestamp: Attribute.DateTime;
+  };
+}
+
+export interface FooterFooterCta extends Schema.Component {
+  collectionName: 'components_footer_footer_ctas';
+  info: {
+    displayName: 'Footer CTA';
+    description: '';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    description: Attribute.Text & Attribute.Required;
+    ctaButton: Attribute.Component<'utils.navigation-link'> &
+      Attribute.Required;
+  };
+}
+
+export interface FooterCompanyInfo extends Schema.Component {
+  collectionName: 'components_footer_company_infos';
+  info: {
+    displayName: 'Company Info';
+    description: '';
+  };
+  attributes: {
+    companyDescription: Attribute.Text & Attribute.Required;
+    logo: Attribute.Media<'images'> & Attribute.Required;
+  };
+}
+
+export interface AboutPageVIsionMissionCard extends Schema.Component {
+  collectionName: 'components_about_page_v_ision_mission_cards';
+  info: {
+    displayName: 'VIsion Mission Card';
+    icon: 'grid';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    description: Attribute.String & Attribute.Required;
+    image: Attribute.Media<'images'> & Attribute.Required;
+  };
+}
+
 export interface OrderBillingDetails extends Schema.Component {
   collectionName: 'components_order_billing_details';
   info: {
@@ -239,76 +290,25 @@ export interface OrderBillingDetails extends Schema.Component {
   };
 }
 
-export interface FooterFooterCta extends Schema.Component {
-  collectionName: 'components_footer_footer_ctas';
-  info: {
-    displayName: 'Footer CTA';
-    description: '';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    description: Attribute.Text & Attribute.Required;
-    ctaButton: Attribute.Component<'utils.navigation-link'> &
-      Attribute.Required;
-  };
-}
-
-export interface FooterCompanyInfo extends Schema.Component {
-  collectionName: 'components_footer_company_infos';
-  info: {
-    displayName: 'Company Info';
-    description: '';
-  };
-  attributes: {
-    companyDescription: Attribute.Text & Attribute.Required;
-    logo: Attribute.Media<'images'> & Attribute.Required;
-  };
-}
-
-export interface FormEmailStatus extends Schema.Component {
-  collectionName: 'components_form_email_statuses';
-  info: {
-    displayName: 'Email Status';
-  };
-  attributes: {
-    customerAcknowledgmentSent: Attribute.Boolean;
-    salesNotificationSent: Attribute.Boolean;
-    timestamp: Attribute.DateTime;
-  };
-}
-
-export interface AboutPageVIsionMissionCard extends Schema.Component {
-  collectionName: 'components_about_page_v_ision_mission_cards';
-  info: {
-    displayName: 'VIsion Mission Card';
-    icon: 'grid';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    description: Attribute.String & Attribute.Required;
-    image: Attribute.Media<'images'> & Attribute.Required;
-  };
-}
-
 declare module '@strapi/types' {
   export module Shared {
     export interface Components {
-      'shared.seo': SharedSeo;
-      'shared.meta-social': SharedMetaSocial;
       'utils.social-link': UtilsSocialLink;
       'utils.navigation-link': UtilsNavigationLink;
       'utils.list-with-editor': UtilsListWithEditor;
       'utils.icon-list': UtilsIconList;
       'utils.form-field': UtilsFormField;
       'utils.cta-banner': UtilsCtaBanner;
-      'home.stats-card': HomeStatsCard;
+      'shared.seo': SharedSeo;
+      'shared.meta-social': SharedMetaSocial;
       'report.product-variant': ReportProductVariant;
       'report.price-item': ReportPriceItem;
-      'order.billing-details': OrderBillingDetails;
+      'home.stats-card': HomeStatsCard;
+      'form.email-status': FormEmailStatus;
       'footer.footer-cta': FooterFooterCta;
       'footer.company-info': FooterCompanyInfo;
-      'form.email-status': FormEmailStatus;
       'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
+      'order.billing-details': OrderBillingDetails;
     }
   }
 }
