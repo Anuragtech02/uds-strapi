@@ -263,9 +263,10 @@ module.exports = ({ env }) => ({
       provider: "nodemailer",
       providerOptions: {
         host: env("SMTP_HOST", "titus.protondns.net"),
-        port: env("SMTP_PORT", 25),
-        ignoreTLS: true,
+        port: env("SMTP_PORT", 465),
         secure: false,
+        debug: true,
+        logger: true,
         auth: {
           user: env("SMTP_USERNAME", "contact@univdatos.com"),
           pass: env("SMTP_PASSWORD", "aL}+v#p5g6*u"),
