@@ -260,11 +260,16 @@ module.exports = ({ env }) => ({
   },
   email: {
     config: {
-      provider: "amazon-ses",
+      provider: "nodemailer",
       providerOptions: {
-        key: process.env.AWS_SES_KEY,
-        secret: process.env.AWS_SES_SECRET,
-        amazon: `https://email.${process.env.AWS_SES_REGION}.amazonaws.com`,
+        host: env("SMTP_HOST", "titus.protondns.net"),
+        port: env("SMTP_PORT", 25),
+        ignoreTLS: true,
+        secure: false,
+        auth: {
+          user: env("SMTP_USERNAME", "contact@univdatos.com"),
+          pass: env("SMTP_PASSWORD", "aL}+v#p5g6*u"),
+        },
       },
       settings: {
         defaultFrom: "contact@univdatos.com",
