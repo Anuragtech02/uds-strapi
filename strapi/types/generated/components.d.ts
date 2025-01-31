@@ -1,96 +1,5 @@
 import type { Schema, Attribute } from '@strapi/strapi';
 
-export interface UtilsSocialLink extends Schema.Component {
-  collectionName: 'components_utils_social_links';
-  info: {
-    displayName: 'Social Link';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    icon: Attribute.Media<'images'>;
-    link: Attribute.String & Attribute.Required;
-  };
-}
-
-export interface UtilsNavigationLink extends Schema.Component {
-  collectionName: 'components_utils_navigation_links';
-  info: {
-    displayName: 'Navigation Link';
-    icon: 'earth';
-    description: '';
-  };
-  attributes: {
-    title: Attribute.String;
-    link: Attribute.String;
-  };
-}
-
-export interface UtilsListWithEditor extends Schema.Component {
-  collectionName: 'components_utils_list_with_editors';
-  info: {
-    displayName: 'List with Editor';
-    icon: 'bulletList';
-    description: '';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    description: Attribute.RichText &
-      Attribute.CustomField<
-        'plugin::ckeditor5.CKEditor',
-        {
-          preset: 'toolbar';
-        }
-      >;
-  };
-}
-
-export interface UtilsIconList extends Schema.Component {
-  collectionName: 'components_utils_icon_lists';
-  info: {
-    displayName: 'Icon List';
-    icon: 'bulletList';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    icon: Attribute.Media<'images'> & Attribute.Required;
-    link: Attribute.String;
-  };
-}
-
-export interface UtilsFormField extends Schema.Component {
-  collectionName: 'components_utils_form_fields';
-  info: {
-    displayName: 'Form Field';
-    icon: 'code';
-  };
-  attributes: {
-    name: Attribute.String & Attribute.Required;
-    label: Attribute.String & Attribute.Required;
-    placeholder: Attribute.String & Attribute.Required;
-    type: Attribute.Enumeration<
-      ['Text', 'Email', 'Phone', 'TextArea', 'CountrySelect']
-    > &
-      Attribute.Required &
-      Attribute.DefaultTo<'Text'>;
-    validationRegex: Attribute.String;
-  };
-}
-
-export interface UtilsCtaBanner extends Schema.Component {
-  collectionName: 'components_utils_cta_banners';
-  info: {
-    displayName: 'CTA Banner';
-    description: '';
-  };
-  attributes: {
-    title: Attribute.String;
-    ctaButton: Attribute.Component<'utils.navigation-link'>;
-    type: Attribute.Enumeration<['Type-1', 'Type-2', 'Type-3']> &
-      Attribute.Required &
-      Attribute.DefaultTo<'Type-1'>;
-  };
-}
-
 export interface SharedSeo extends Schema.Component {
   collectionName: 'components_shared_seos';
   info: {
@@ -195,6 +104,97 @@ export interface ReportPriceItem extends Schema.Component {
   };
 }
 
+export interface UtilsSocialLink extends Schema.Component {
+  collectionName: 'components_utils_social_links';
+  info: {
+    displayName: 'Social Link';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    icon: Attribute.Media<'images'>;
+    link: Attribute.String & Attribute.Required;
+  };
+}
+
+export interface UtilsNavigationLink extends Schema.Component {
+  collectionName: 'components_utils_navigation_links';
+  info: {
+    displayName: 'Navigation Link';
+    icon: 'earth';
+    description: '';
+  };
+  attributes: {
+    title: Attribute.String;
+    link: Attribute.String;
+  };
+}
+
+export interface UtilsListWithEditor extends Schema.Component {
+  collectionName: 'components_utils_list_with_editors';
+  info: {
+    displayName: 'List with Editor';
+    icon: 'bulletList';
+    description: '';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    description: Attribute.RichText &
+      Attribute.CustomField<
+        'plugin::ckeditor5.CKEditor',
+        {
+          preset: 'toolbar';
+        }
+      >;
+  };
+}
+
+export interface UtilsIconList extends Schema.Component {
+  collectionName: 'components_utils_icon_lists';
+  info: {
+    displayName: 'Icon List';
+    icon: 'bulletList';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    icon: Attribute.Media<'images'> & Attribute.Required;
+    link: Attribute.String;
+  };
+}
+
+export interface UtilsFormField extends Schema.Component {
+  collectionName: 'components_utils_form_fields';
+  info: {
+    displayName: 'Form Field';
+    icon: 'code';
+  };
+  attributes: {
+    name: Attribute.String & Attribute.Required;
+    label: Attribute.String & Attribute.Required;
+    placeholder: Attribute.String & Attribute.Required;
+    type: Attribute.Enumeration<
+      ['Text', 'Email', 'Phone', 'TextArea', 'CountrySelect']
+    > &
+      Attribute.Required &
+      Attribute.DefaultTo<'Text'>;
+    validationRegex: Attribute.String;
+  };
+}
+
+export interface UtilsCtaBanner extends Schema.Component {
+  collectionName: 'components_utils_cta_banners';
+  info: {
+    displayName: 'CTA Banner';
+    description: '';
+  };
+  attributes: {
+    title: Attribute.String;
+    ctaButton: Attribute.Component<'utils.navigation-link'>;
+    type: Attribute.Enumeration<['Type-1', 'Type-2', 'Type-3']> &
+      Attribute.Required &
+      Attribute.DefaultTo<'Type-1'>;
+  };
+}
+
 export interface OrderBillingDetails extends Schema.Component {
   collectionName: 'components_order_billing_details';
   info: {
@@ -281,16 +281,16 @@ export interface AboutPageVIsionMissionCard extends Schema.Component {
 declare module '@strapi/types' {
   export module Shared {
     export interface Components {
+      'shared.seo': SharedSeo;
+      'shared.meta-social': SharedMetaSocial;
+      'report.product-variant': ReportProductVariant;
+      'report.price-item': ReportPriceItem;
       'utils.social-link': UtilsSocialLink;
       'utils.navigation-link': UtilsNavigationLink;
       'utils.list-with-editor': UtilsListWithEditor;
       'utils.icon-list': UtilsIconList;
       'utils.form-field': UtilsFormField;
       'utils.cta-banner': UtilsCtaBanner;
-      'shared.seo': SharedSeo;
-      'shared.meta-social': SharedMetaSocial;
-      'report.product-variant': ReportProductVariant;
-      'report.price-item': ReportPriceItem;
       'order.billing-details': OrderBillingDetails;
       'home.stats-card': HomeStatsCard;
       'footer.footer-cta': FooterFooterCta;

@@ -7,6 +7,7 @@ module.exports = {
 
     // Fetch the complete report data if a report ID exists
     let reportData = null;
+    console.log(result);
     if (result.report) {
       try {
         reportData = await strapi.entityService.findOne(
