@@ -349,12 +349,12 @@
       "type": "relation",
       "relation": "oneToMany",
       "target": "api::enquiry-form-submission.enquiry-form-submission",
-      "mappedBy": "report",
       "pluginOptions": {
         "translate": {
           "translate": "translate"
         }
-      }
+      },
+      "mappedBy": "report"
     },
     "status": {
       "pluginOptions": {

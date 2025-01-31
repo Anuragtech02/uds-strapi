@@ -1,0 +1,18 @@
+{
+  "collectionName": "components_form_email_statuses",
+  "info": {
+    "displayName": "Email Status"
+  },
+  "options": {},
+  "attributes": {
+    "customerAcknowledgmentSent": {
+      "type": "boolean"
+    },
+    "salesNotificationSent": {
+      "type": "boolean"
+    },
+    "timestamp": {
+      "type": "datetime"
+    }
+  }
+}

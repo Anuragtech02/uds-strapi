@@ -5,23 +5,16 @@ module.exports = {
     const logoUrl =
       "https://udsweb.s3.ap-south-1.amazonaws.com/logo_f2f9595b81.svg";
 
-    // Fetch the complete report data if a report ID exists
-    let reportData = null;
-    console.log(result);
-    if (result.report) {
-      try {
-        reportData = await strapi.entityService.findOne(
-          "api::report.report",
-          result.report,
-          {
-            populate: ["title"], // Add any other fields you need
-          }
-        );
-        console.log("Found report data:", reportData);
-      } catch (error) {
-        console.error("Error fetching report data:", error);
+    const populatedResult = await strapi.entityService.findOne(
+      "api::enquiry-form-submission.enquiry-form-submission",
+      result.id,
+      {
+        populate: ["report"],
       }
-    }
+    );
+
+    // Fetch the complete report data if a report ID exists
+    const reportData = populatedResult.report;
 
     const emailStyles = `
         /* Reset styles */
@@ -294,10 +287,8 @@ module.exports = {
     // Log overall results
     const [salesEmailResult, customerEmailResult] = results;
     console.log("Email sending completed:", {
-      salesNotification:
-        salesEmailResult.status === "fulfilled" ? "success" : "failed",
-      customerAcknowledgment:
-        customerEmailResult.status === "fulfilled" ? "success" : "failed",
+      salesNotification: salesEmailResult.status === "fulfilled",
+      customerAcknowledgment: customerEmailResult.status === "fulfilled",
       timestamp: new Date().toISOString(),
       submissionId: result.id,
     });

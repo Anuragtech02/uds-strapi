@@ -4,7 +4,8 @@
   "info": {
     "singularName": "enquiry-form-submission",
     "pluralName": "enquiry-form-submissions",
-    "displayName": "Enquiry Form Submission"
+    "displayName": "Enquiry Form Submission",
+    "description": ""
   },
   "options": {
     "draftAndPublish": true
@@ -35,6 +36,11 @@
     "country": {
       "type": "string",
       "required": true
+    },
+    "emailStatus": {
+      "type": "component",
+      "repeatable": false,
+      "component": "form.email-status"
     }
   }
 }

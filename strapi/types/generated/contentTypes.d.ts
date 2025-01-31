@@ -1910,6 +1910,7 @@ export interface ApiEnquiryFormSubmissionEnquiryFormSubmission
     singularName: 'enquiry-form-submission';
     pluralName: 'enquiry-form-submissions';
     displayName: 'Enquiry Form Submission';
+    description: '';
   };
   options: {
     draftAndPublish: true;
@@ -1925,6 +1926,7 @@ export interface ApiEnquiryFormSubmissionEnquiryFormSubmission
     >;
     mobileNumber: Attribute.String;
     country: Attribute.String & Attribute.Required;
+    emailStatus: Attribute.Component<'form.email-status'>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
