@@ -13,7 +13,7 @@ module.exports = {
       }
     );
 
-    console.log(populatedResult);
+    console.log("This is populated result", populatedResult);
 
     // Fetch the complete report data if a report ID exists
     const reportData = populatedResult.report;
