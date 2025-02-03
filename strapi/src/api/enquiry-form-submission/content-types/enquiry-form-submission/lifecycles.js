@@ -251,7 +251,7 @@ module.exports = {
                       
                       <div class="contact-info">
                         <p>Email: contact@univdatos.com</p>
-                        <p>Phone: +1 9787330253</p>
+                        <p>Phone: +1 978 733 0253</p>
                       </div>
   
                     </div>
