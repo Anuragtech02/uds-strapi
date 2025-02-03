@@ -208,37 +208,6 @@ export interface HomeStatsCard extends Schema.Component {
   };
 }
 
-export interface OrderBillingDetails extends Schema.Component {
-  collectionName: 'components_order_billing_details';
-  info: {
-    displayName: 'Billing Details';
-    description: 'Customer billing information for orders';
-  };
-  attributes: {
-    firstName: Attribute.String &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        minLength: 2;
-      }>;
-    lastName: Attribute.String &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        minLength: 2;
-      }>;
-    email: Attribute.Email & Attribute.Required;
-    phone: Attribute.String & Attribute.Required;
-    country: Attribute.String & Attribute.Required;
-    state: Attribute.String & Attribute.Required;
-    city: Attribute.String & Attribute.Required;
-    address: Attribute.Text &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        minLength: 10;
-      }>;
-    orderNotes: Attribute.Text;
-  };
-}
-
 export interface FormEmailStatus extends Schema.Component {
   collectionName: 'components_form_email_statuses';
   info: {
@@ -290,6 +259,37 @@ export interface AboutPageVIsionMissionCard extends Schema.Component {
   };
 }
 
+export interface OrderBillingDetails extends Schema.Component {
+  collectionName: 'components_order_billing_details';
+  info: {
+    displayName: 'Billing Details';
+    description: 'Customer billing information for orders';
+  };
+  attributes: {
+    firstName: Attribute.String &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        minLength: 2;
+      }>;
+    lastName: Attribute.String &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        minLength: 2;
+      }>;
+    email: Attribute.Email & Attribute.Required;
+    phone: Attribute.String & Attribute.Required;
+    country: Attribute.String & Attribute.Required;
+    state: Attribute.String & Attribute.Required;
+    city: Attribute.String & Attribute.Required;
+    address: Attribute.Text &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        minLength: 10;
+      }>;
+    orderNotes: Attribute.Text;
+  };
+}
+
 declare module '@strapi/types' {
   export module Shared {
     export interface Components {
@@ -304,11 +304,11 @@ declare module '@strapi/types' {
       'report.product-variant': ReportProductVariant;
       'report.price-item': ReportPriceItem;
       'home.stats-card': HomeStatsCard;
-      'order.billing-details': OrderBillingDetails;
       'form.email-status': FormEmailStatus;
       'footer.footer-cta': FooterFooterCta;
       'footer.company-info': FooterCompanyInfo;
       'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
+      'order.billing-details': OrderBillingDetails;
     }
   }
 }

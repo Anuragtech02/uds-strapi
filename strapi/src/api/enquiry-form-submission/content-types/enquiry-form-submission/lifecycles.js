@@ -140,7 +140,7 @@ module.exports = {
                 <body>
                   <div class="container">
                     <div class="header">
-                      <img src="${logoUrl}" alt="UnivDatos" class="logo">
+                      <img src="${logoUrl}" alt="UnivDatos" style="width:200px;max-width:200px;" class="logo">
                     </div>
                     
                     <div class="content">
@@ -220,7 +220,7 @@ module.exports = {
                 <body>
                   <div class="container">
                     <div class="header">
-                      <img src="${logoUrl}" alt="UnivDatos" class="logo">
+                      <img src="${logoUrl}" alt="UnivDatos" style="width:200px;max-width:200px;" class="logo">
                     </div>
                     
                     <div class="content">
