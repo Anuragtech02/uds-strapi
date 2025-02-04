@@ -308,16 +308,18 @@ module.exports = {
 
     // Optionally, you could store the email sending status in your database
     try {
-      await strapi.query("api::form-submission.form-submission").update({
-        where: { id: result.id },
-        data: {
-          emailStatus: {
-            teamNotificationSent: teamEmailResult.status === "fulfilled",
-            userAcknowledgmentSent: userEmailResult.status === "fulfilled",
-            timestamp: new Date().toISOString(),
+      await strapi
+        .query("api::callback-form-submission.callback-form-submission")
+        .update({
+          where: { id: result.id },
+          data: {
+            emailStatus: {
+              teamNotificationSent: teamEmailResult.status === "fulfilled",
+              userAcknowledgmentSent: userEmailResult.status === "fulfilled",
+              timestamp: new Date().toISOString(),
+            },
           },
-        },
-      });
+        });
     } catch (error) {
       console.error("Failed to update submission with email status:", error);
     }
