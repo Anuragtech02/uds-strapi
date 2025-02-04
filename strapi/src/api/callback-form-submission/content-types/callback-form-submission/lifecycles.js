@@ -263,13 +263,13 @@ module.exports = {
                     
                     <p class="message-text">Thank you for reaching out to UnivDatos. We have received your inquiry and our team will review it promptly.</p>
                     
-                    <p class="message-text">We aim to respond to all inquiries within 24-48 business hours. In the meantime, if you have any urgent questions, please don't hesitate to call us.</p>
+                    <p class="message-text">We aim to respond to all inquiries within 24-48 business hours.</p>
                     
                     <p class="message-text">Best regards,<br>The UnivDatos Team</p>
                   </div>
                   
                   <div class="footer">
-                    <p>© 2024 UnivDatos. All rights reserved.</p>
+                    <p>© 2025 UnivDatos. All rights reserved. | Email: contact@univdatos.com | Phone: +1 978 733 0253</p>
                   </div>
                 </div>
               </body>

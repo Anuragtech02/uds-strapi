@@ -252,7 +252,7 @@ module.exports = {
 
         const customerFooter = `
           <p style="color: #666666; font-size: 14px; margin: 5px 0; font-family: Arial, sans-serif;">
-            © 2024 UnivDatos Market Insights<br/>
+            © 2025 UnivDatos Market Insights<br/>
             All Rights Reserved
           </p>
         `;
