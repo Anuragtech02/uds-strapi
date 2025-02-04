@@ -3,7 +3,7 @@ module.exports = {
     console.log("Processing new form submission for emails");
     const { result } = event;
     const logoUrl =
-      "https://udsweb.s3.ap-south-1.amazonaws.com/logo_f2f9595b81.svg";
+      "https://udsweb.s3.ap-south-1.amazonaws.com/UDS_LOGO_White_fb96f6add9.png";
 
     const emailStyles = `
     /* Reset styles */
