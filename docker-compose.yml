@@ -3,8 +3,8 @@ services:
     image: traefik:v2.10
     command:
       - --log.level=DEBUG
-      - --api.insecure=false  # Changed to false for security
-      - --api.dashboard=true  # Explicitly enable dashboard
+      - --api.insecure=false # Changed to false for security
+      - --api.dashboard=true # Explicitly enable dashboard
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=uds-strapi_app-network
@@ -65,6 +65,8 @@ services:
       - "traefik.http.routers.strapi1-http.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.strapi1-http.entrypoints=web"
       - "traefik.http.routers.strapi1-http.service=strapi-backend"
+      - "traefik.http.middlewares.cloudflare-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.strapi1.middlewares=cloudflare-proto"
     networks:
       - app-network
     depends_on:
@@ -99,6 +101,8 @@ services:
       - "traefik.http.routers.strapi2-http.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.strapi2-http.entrypoints=web"
       - "traefik.http.routers.strapi2-http.service=strapi-backend"
+      - "traefik.http.middlewares.cloudflare-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.strapi2.middlewares=cloudflare-proto"
     networks:
       - app-network
     depends_on:
@@ -136,7 +140,7 @@ services:
 
 networks:
   app-network:
-    name: uds-strapi_app-network  # Explicitly name the network
+    name: uds-strapi_app-network # Explicitly name the network
     driver: bridge
 
 volumes:
