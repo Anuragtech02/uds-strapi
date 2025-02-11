@@ -1,2 +1,6 @@
+<<<<<<< HEAD
 .env
 letsencrypt/
+=======
+node_modules/
+>>>>>>> 9829390914af2b431b6e4f8dceb196980a335b88

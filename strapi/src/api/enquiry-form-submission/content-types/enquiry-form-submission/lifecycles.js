@@ -16,6 +16,54 @@ module.exports = {
     // Fetch the complete report data if a report ID exists
     const reportData = populatedResult.report;
 
+    const getActiveEmailAddresses = async () => {
+      try {
+        // Fetch the common single type with emailConfig
+        const commonConfig = await strapi.entityService.findOne(
+          "api::common.common",
+          1, // Single type always has ID 1
+          {
+            populate: ["emailConfig"],
+          }
+        );
+
+        if (!commonConfig?.emailConfig) {
+          console.log("No email configuration found, using default addresses");
+          return [];
+        }
+
+        const currentTime = new Date();
+        const currentHour = currentTime.getHours();
+        const currentMinutes = currentTime.getMinutes();
+        const currentTimeString = `${String(currentHour).padStart(
+          2,
+          "0"
+        )}:${String(currentMinutes).padStart(2, "0")}`;
+
+        // Filter email addresses based on time ranges
+        return commonConfig.emailConfig
+          .filter((config) => {
+            if (!config.startTime || !config.endTime || !config.email)
+              return false;
+
+            // Convert times to comparable format (24-hour)
+            const start = config.startTime;
+            const end = config.endTime;
+
+            // Handle time range crossing midnight
+            if (end < start) {
+              return currentTimeString >= start || currentTimeString <= end;
+            }
+
+            return currentTimeString >= start && currentTimeString <= end;
+          })
+          .map((config) => config.email);
+      } catch (error) {
+        console.error("Error fetching email configuration:", error);
+        return [];
+      }
+    };
+
     // Outlook-friendly email styles
     const emailStyles = `
     /* MSO-specific styles */
@@ -114,6 +162,15 @@ module.exports = {
 
     // Function to send sales team notification
     const sendSalesNotification = async () => {
+      const additionalEmails = await getActiveEmailAddresses();
+
+      // Combine default and time-based email addresses
+      const allRecipients = ["sales2@univdatos.com", ...additionalEmails];
+
+      // Remove duplicates
+      const uniqueRecipients = [...new Set(allRecipients)];
+      console.log("Sending sales notification to:", uniqueRecipients);
+
       try {
         console.log("Sending notification email to sales team...");
         const salesContent = `
@@ -167,7 +224,7 @@ module.exports = {
           .replace("{{FOOTER}}", salesFooter);
 
         await strapi.plugins["email"].services.email.send({
-          to: "sales2@univdatos.com",
+          to: uniqueRecipients.join(","),
           from: "sales2@univdatos.com",
           subject: "New Report Enquiry",
           html: salesEmailHtml,

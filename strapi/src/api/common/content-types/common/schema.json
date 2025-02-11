@@ -1,0 +1,21 @@
+{
+  "kind": "singleType",
+  "collectionName": "commons",
+  "info": {
+    "singularName": "common",
+    "pluralName": "commons",
+    "displayName": "Common"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "emailConfig": {
+      "displayName": "Email Time",
+      "type": "component",
+      "repeatable": true,
+      "component": "email.email-time"
+    }
+  }
+}

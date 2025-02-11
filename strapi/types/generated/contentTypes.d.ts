@@ -1523,6 +1523,39 @@ export interface ApiCallbackFormSubmissionCallbackFormSubmission
   };
 }
 
+export interface ApiCommonCommon extends Schema.SingleType {
+  collectionName: 'commons';
+  info: {
+    singularName: 'common';
+    pluralName: 'commons';
+    displayName: 'Common';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    emailConfig: Attribute.Component<'email.email-time', true>;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    publishedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::common.common',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::common.common',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    sitemap_exclude: Attribute.Boolean &
+      Attribute.Private &
+      Attribute.DefaultTo<false>;
+  };
+}
+
 export interface ApiContactFormSubmissionContactFormSubmission
   extends Schema.CollectionType {
   collectionName: 'contact_form_submissions';
@@ -3627,6 +3660,7 @@ declare module '@strapi/types' {
       'api::author.author': ApiAuthorAuthor;
       'api::blog.blog': ApiBlogBlog;
       'api::callback-form-submission.callback-form-submission': ApiCallbackFormSubmissionCallbackFormSubmission;
+      'api::common.common': ApiCommonCommon;
       'api::contact-form-submission.contact-form-submission': ApiContactFormSubmissionContactFormSubmission;
       'api::contact-page.contact-page': ApiContactPageContactPage;
       'api::coupon.coupon': ApiCouponCoupon;
