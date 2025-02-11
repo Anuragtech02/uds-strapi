@@ -1,0 +1,22 @@
+{
+  "collectionName": "components_email_email_times",
+  "info": {
+    "displayName": "Email Time",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "email": {
+      "type": "email",
+      "required": true
+    },
+    "startTime": {
+      "type": "time",
+      "required": true
+    },
+    "endTime": {
+      "type": "time",
+      "required": true
+    }
+  }
+}

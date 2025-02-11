@@ -277,6 +277,19 @@ export interface FooterCompanyInfo extends Schema.Component {
   };
 }
 
+export interface EmailEmailTime extends Schema.Component {
+  collectionName: 'components_email_email_times';
+  info: {
+    displayName: 'Email Time';
+    description: '';
+  };
+  attributes: {
+    email: Attribute.Email & Attribute.Required;
+    startTime: Attribute.Time & Attribute.Required;
+    endTime: Attribute.Time & Attribute.Required;
+  };
+}
+
 export interface AboutPageVIsionMissionCard extends Schema.Component {
   collectionName: 'components_about_page_v_ision_mission_cards';
   info: {
@@ -308,6 +321,7 @@ declare module '@strapi/types' {
       'form.email-status': FormEmailStatus;
       'footer.footer-cta': FooterFooterCta;
       'footer.company-info': FooterCompanyInfo;
+      'email.email-time': EmailEmailTime;
       'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
     }
   }
