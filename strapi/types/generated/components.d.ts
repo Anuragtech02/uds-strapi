@@ -215,7 +215,7 @@ export interface OrderBillingDetails extends Schema.Component {
     email: Attribute.Email & Attribute.Required;
     phone: Attribute.String & Attribute.Required;
     country: Attribute.String & Attribute.Required;
-    state: Attribute.String & Attribute.Required;
+    state: Attribute.String;
     city: Attribute.String & Attribute.Required;
     address: Attribute.Text &
       Attribute.Required &

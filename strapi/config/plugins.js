@@ -31,11 +31,11 @@ module.exports = ({ env }) => ({
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: [
             "words",
-            "exactness",
             "typo",
             "proximity",
             "attribute",
             "sort",
+            "exactness",
           ],
           // distinctAttribute: null,
           typoTolerance: {
@@ -51,6 +51,7 @@ module.exports = ({ env }) => ({
         settings: {
           searchableAttributes: [
             "title",
+            "description",
             // "shortDescription",
             // "industries.name",
             // "geographies.name",
@@ -64,11 +65,11 @@ module.exports = ({ env }) => ({
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: [
             "words",
-            "exactness",
             "typo",
             "proximity",
             "attribute",
             "sort",
+            "exactness",
           ],
           distinctAttribute: null,
           typoTolerance: {
@@ -95,6 +96,7 @@ module.exports = ({ env }) => ({
         settings: {
           searchableAttributes: [
             "title",
+            "description",
             // "shortDescription",
             // "industries.name",
             // "geographies.name",
@@ -108,11 +110,11 @@ module.exports = ({ env }) => ({
           sortableAttributes: ["oldPublishedAt", "publishedAt"],
           rankingRules: [
             "words",
-            "exactness",
             "typo",
             "proximity",
             "attribute",
             "sort",
+            "exactness",
           ],
           distinctAttribute: null,
           typoTolerance: {
