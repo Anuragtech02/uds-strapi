@@ -5,6 +5,54 @@ module.exports = {
     const logoUrl =
       "https://udsweb.s3.ap-south-1.amazonaws.com/UDS_LOGO_White_fb96f6add9.png";
 
+    const getActiveEmailAddresses = async () => {
+      try {
+        // Fetch the common single type with emailConfig
+        const commonConfig = await strapi.entityService.findOne(
+          "api::common.common",
+          1, // Single type always has ID 1
+          {
+            populate: ["emailConfig"],
+          }
+        );
+
+        if (!commonConfig?.emailConfig) {
+          console.log("No email configuration found, using default addresses");
+          return [];
+        }
+
+        const currentTime = new Date();
+        const currentHour = currentTime.getHours();
+        const currentMinutes = currentTime.getMinutes();
+        const currentTimeString = `${String(currentHour).padStart(
+          2,
+          "0"
+        )}:${String(currentMinutes).padStart(2, "0")}`;
+
+        // Filter email addresses based on time ranges
+        return commonConfig.emailConfig
+          .filter((config) => {
+            if (!config.startTime || !config.endTime || !config.email)
+              return false;
+
+            // Convert times to comparable format (24-hour)
+            const start = config.startTime;
+            const end = config.endTime;
+
+            // Handle time range crossing midnight
+            if (end < start) {
+              return currentTimeString >= start || currentTimeString <= end;
+            }
+
+            return currentTimeString >= start && currentTimeString <= end;
+          })
+          .map((config) => config.email);
+      } catch (error) {
+        console.error("Error fetching email configuration:", error);
+        return [];
+      }
+    };
+
     const emailStyles = `
     /* Reset styles */
     body, table, td, div, p {
@@ -107,10 +155,19 @@ module.exports = {
 
     // Function to send team notification email
     const sendTeamNotification = async () => {
+      const additionalEmails = await getActiveEmailAddresses();
+
+      // Combine default and time-based email addresses
+      const allRecipients = ["contact@univdatos.com", ...additionalEmails];
+
+      // Remove duplicates
+      const uniqueRecipients = [...new Set(allRecipients)];
+      console.log("Sending contact form notification to:", uniqueRecipients);
+
       try {
         console.log("Sending notification email to team...");
         await strapi.plugins["email"].services.email.send({
-          to: "contact@univdatos.com",
+          to: uniqueRecipients,
           from: "contact@univdatos.com",
           subject: "New Callback Form Submission",
           html: `
