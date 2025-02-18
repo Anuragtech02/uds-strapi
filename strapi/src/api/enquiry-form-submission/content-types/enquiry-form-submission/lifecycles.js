@@ -18,10 +18,9 @@ module.exports = {
 
     const getActiveEmailAddresses = async () => {
       try {
-        // Fetch the common single type with emailConfig
         const commonConfig = await strapi.entityService.findOne(
           "api::common.common",
-          1, // Single type always has ID 1
+          1,
           {
             populate: ["emailConfig"],
           }
@@ -32,32 +31,70 @@ module.exports = {
           return [];
         }
 
-        const currentTime = new Date();
-        const currentHour = currentTime.getHours();
-        const currentMinutes = currentTime.getMinutes();
-        const currentTimeString = `${String(currentHour).padStart(
+        // Get current time in IST using explicit options
+        const currentTimeIST = new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Kolkata",
+          hour12: false, // Use 24-hour format
+        });
+
+        // Parse the IST time string to get hours, minutes, seconds
+        const [_, time] = currentTimeIST.split(", "); // Split date and time
+        const [hours, minutes, seconds] = time.split(":");
+
+        // Format time string in HH:mm:ss format
+        const currentTimeString = `${hours.padStart(2, "0")}:${minutes.padStart(
           2,
           "0"
-        )}:${String(currentMinutes).padStart(2, "0")}`;
+        )}:${seconds.padStart(2, "0")}`;
 
-        // Filter email addresses based on time ranges
-        return commonConfig.emailConfig
+        console.log(
+          `Current time (IST) for email routing: ${currentTimeString}`
+        );
+
+        // Helper function to adjust only end times
+        const adjustEndTime = (timeStr) => {
+          const [hours, minutes, seconds] = timeStr.split(":");
+          if (seconds === "00") {
+            return `${hours}:${minutes}:59`;
+          }
+          return timeStr;
+        };
+
+        const activeEmails = commonConfig.emailConfig
           .filter((config) => {
-            if (!config.startTime || !config.endTime || !config.email)
+            if (!config.startTime || !config.endTime || !config.email) {
+              console.log(`Skipping invalid config:`, config);
               return false;
+            }
 
-            // Convert times to comparable format (24-hour)
             const start = config.startTime;
-            const end = config.endTime;
+            const end = adjustEndTime(config.endTime);
+
+            console.log(`Checking time range for ${config.email}:`);
+            if (config.endTime !== end) {
+              console.log(`Adjusted end time from ${config.endTime} to ${end}`);
+            }
+            console.log(
+              `Range: ${start} to ${end} (current IST: ${currentTimeString})`
+            );
 
             // Handle time range crossing midnight
             if (end < start) {
-              return currentTimeString >= start || currentTimeString <= end;
+              const isActive =
+                currentTimeString >= start || currentTimeString <= end;
+              console.log(`Crosses midnight - Active: ${isActive}`);
+              return isActive;
             }
 
-            return currentTimeString >= start && currentTimeString <= end;
+            const isActive =
+              currentTimeString >= start && currentTimeString <= end;
+            console.log(`Regular range - Active: ${isActive}`);
+            return isActive;
           })
           .map((config) => config.email);
+
+        console.log("Active email addresses:", activeEmails);
+        return activeEmails;
       } catch (error) {
         console.error("Error fetching email configuration:", error);
         return [];
