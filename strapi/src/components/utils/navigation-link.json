@@ -8,10 +8,12 @@
   "options": {},
   "attributes": {
     "title": {
-      "type": "string"
+      "type": "string",
+      "default": "Contact Us"
     },
     "link": {
-      "type": "string"
+      "type": "string",
+      "default": "/contact-us"
     }
   }
 }

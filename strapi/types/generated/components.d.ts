@@ -20,8 +20,8 @@ export interface UtilsNavigationLink extends Schema.Component {
     description: '';
   };
   attributes: {
-    title: Attribute.String;
-    link: Attribute.String;
+    title: Attribute.String & Attribute.DefaultTo<'Contact Us'>;
+    link: Attribute.String & Attribute.DefaultTo<'/contact-us'>;
   };
 }
 
@@ -83,7 +83,8 @@ export interface UtilsCtaBanner extends Schema.Component {
     description: '';
   };
   attributes: {
-    title: Attribute.String;
+    title: Attribute.String &
+      Attribute.DefaultTo<'<span>Pre-order</span> this report for special discounts!'>;
     ctaButton: Attribute.Component<'utils.navigation-link'>;
     type: Attribute.Enumeration<['Type-1', 'Type-2', 'Type-3']> &
       Attribute.Required &

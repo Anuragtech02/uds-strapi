@@ -215,21 +215,23 @@ module.exports = ({ env }) => ({
     enabled: false,
   },
   slugify: {
-    enabled: false,
+    enabled: true,
     config: {
       contentTypes: {
         blog: {
           field: "slug",
           references: "title",
+          shouldUpdateSlug: true,
         },
         report: {
           field: "slug",
           references: "title",
-          shouldUpdateSlug: false,
+          shouldUpdateSlug: true,
         },
         "news-article": {
           field: "slug",
           references: "title",
+          shouldUpdateSlug: true,
         },
       },
     },

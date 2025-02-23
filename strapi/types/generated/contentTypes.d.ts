@@ -727,6 +727,48 @@ export interface PluginMenusMenuItem extends Schema.CollectionType {
   };
 }
 
+export interface PluginSlugifySlug extends Schema.CollectionType {
+  collectionName: 'slugs';
+  info: {
+    singularName: 'slug';
+    pluralName: 'slugs';
+    displayName: 'slug';
+  };
+  options: {
+    draftAndPublish: false;
+    comment: '';
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    slug: Attribute.Text;
+    count: Attribute.Integer;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'plugin::slugify.slug',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'plugin::slugify.slug',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    sitemap_exclude: Attribute.Boolean &
+      Attribute.Private &
+      Attribute.DefaultTo<false>;
+  };
+}
+
 export interface PluginSitemapSitemap extends Schema.CollectionType {
   collectionName: 'sitemap';
   info: {
@@ -3011,7 +3053,8 @@ export interface ApiReportReport extends Schema.CollectionType {
       }> &
       Attribute.SetMinMaxLength<{
         minLength: 1;
-      }>;
+      }> &
+      Attribute.DefaultTo<'Frequently Asked Questions (FAQs)'>;
     description: Attribute.RichText &
       Attribute.Required &
       Attribute.CustomField<
@@ -3037,7 +3080,8 @@ export interface ApiReportReport extends Schema.CollectionType {
       }> &
       Attribute.SetMinMaxLength<{
         minLength: 1;
-      }>;
+      }> &
+      Attribute.DefaultTo<'Related Reports'>;
     relatedReportsSectionReportsCount: Attribute.Integer &
       Attribute.Required &
       Attribute.SetPluginOptions<{
@@ -3050,7 +3094,8 @@ export interface ApiReportReport extends Schema.CollectionType {
           min: 0;
         },
         number
-      >;
+      > &
+      Attribute.DefaultTo<6>;
     relatedReportsSectionSubheading: Attribute.String &
       Attribute.Required &
       Attribute.SetPluginOptions<{
@@ -3060,7 +3105,8 @@ export interface ApiReportReport extends Schema.CollectionType {
         translate: {
           translate: 'translate';
         };
-      }>;
+      }> &
+      Attribute.DefaultTo<'You might also like these reports'>;
     clientsSectionHeading: Attribute.String &
       Attribute.Required &
       Attribute.SetPluginOptions<{
@@ -3073,7 +3119,8 @@ export interface ApiReportReport extends Schema.CollectionType {
       }> &
       Attribute.SetMinMaxLength<{
         minLength: 1;
-      }>;
+      }> &
+      Attribute.DefaultTo<'Trusted by Companies <span>Worldwide</span>'>;
     ctaBanner: Attribute.Component<'utils.cta-banner'> &
       Attribute.SetPluginOptions<{
         i18n: {
@@ -3084,7 +3131,6 @@ export interface ApiReportReport extends Schema.CollectionType {
         };
       }>;
     heroSectionPrimaryCTA: Attribute.Component<'utils.navigation-link'> &
-      Attribute.Required &
       Attribute.SetPluginOptions<{
         i18n: {
           localized: true;
@@ -3094,7 +3140,6 @@ export interface ApiReportReport extends Schema.CollectionType {
         };
       }>;
     heroSectionSecondaryCTA: Attribute.Component<'utils.navigation-link'> &
-      Attribute.Required &
       Attribute.SetPluginOptions<{
         i18n: {
           localized: true;
@@ -3114,7 +3159,6 @@ export interface ApiReportReport extends Schema.CollectionType {
         };
       }>;
     leftSectionPrimaryCTAButton: Attribute.Component<'utils.navigation-link'> &
-      Attribute.Required &
       Attribute.SetPluginOptions<{
         i18n: {
           localized: true;
@@ -3141,7 +3185,8 @@ export interface ApiReportReport extends Schema.CollectionType {
         translate: {
           translate: 'translate';
         };
-      }>;
+      }> &
+      Attribute.DefaultTo<'License Options'>;
     highlightImage: Attribute.Media<'images'> &
       Attribute.Required &
       Attribute.SetPluginOptions<{
@@ -3649,6 +3694,7 @@ declare module '@strapi/types' {
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::menus.menu': PluginMenusMenu;
       'plugin::menus.menu-item': PluginMenusMenuItem;
+      'plugin::slugify.slug': PluginSlugifySlug;
       'plugin::sitemap.sitemap': PluginSitemapSitemap;
       'plugin::sitemap.sitemap-cache': PluginSitemapSitemapCache;
       'plugin::i18n.locale': PluginI18NLocale;

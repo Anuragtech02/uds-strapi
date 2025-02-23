@@ -139,7 +139,8 @@
       },
       "type": "string",
       "required": true,
-      "minLength": 1
+      "minLength": 1,
+      "default": "Frequently Asked Questions (FAQs)"
     },
     "description": {
       "pluginOptions": {
@@ -165,7 +166,8 @@
       },
       "type": "string",
       "required": true,
-      "minLength": 1
+      "minLength": 1,
+      "default": "Related Reports"
     },
     "relatedReportsSectionReportsCount": {
       "pluginOptions": {
@@ -175,7 +177,8 @@
       },
       "type": "integer",
       "required": true,
-      "min": 0
+      "min": 0,
+      "default": 6
     },
     "relatedReportsSectionSubheading": {
       "pluginOptions": {
@@ -187,7 +190,8 @@
         }
       },
       "type": "string",
-      "required": true
+      "required": true,
+      "default": "You might also like these reports"
     },
     "clientsSectionHeading": {
       "pluginOptions": {
@@ -200,7 +204,8 @@
       },
       "type": "string",
       "required": true,
-      "minLength": 1
+      "minLength": 1,
+      "default": "Trusted by Companies <span>Worldwide</span>"
     },
     "ctaBanner": {
       "type": "component",
@@ -228,7 +233,7 @@
         }
       },
       "component": "utils.navigation-link",
-      "required": true
+      "required": false
     },
     "heroSectionSecondaryCTA": {
       "type": "component",
@@ -242,7 +247,7 @@
         }
       },
       "component": "utils.navigation-link",
-      "required": true
+      "required": false
     },
     "geography": {
       "type": "relation",
@@ -267,7 +272,7 @@
         }
       },
       "component": "utils.navigation-link",
-      "required": true
+      "required": false
     },
     "leftSectionSecondaryCTAButton": {
       "type": "component",
@@ -292,7 +297,8 @@
         }
       },
       "type": "string",
-      "required": true
+      "required": true,
+      "default": "License Options"
     },
     "highlightImage": {
       "type": "media",
