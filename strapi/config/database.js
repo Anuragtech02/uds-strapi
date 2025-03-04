@@ -75,9 +75,9 @@ module.exports = ({ env }) => {
       },
       pool: {
         min: env.int("DATABASE_POOL_MIN", 2),
-        max: env.int("DATABASE_POOL_MAX", 4),
+        max: 3, // Very small pool to recover from the issue
+        acquireTimeoutMillis: 90000,
         idleTimeoutMillis: 30000,
-        acquireTimeoutMillis: 60000,
       },
     },
     sqlite: {
