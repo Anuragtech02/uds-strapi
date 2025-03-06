@@ -4,7 +4,8 @@
   "info": {
     "singularName": "legal",
     "pluralName": "legals",
-    "displayName": "Legal"
+    "displayName": "Legal",
+    "description": ""
   },
   "options": {
     "draftAndPublish": true
@@ -41,6 +42,19 @@
       },
       "required": true,
       "customField": "plugin::ckeditor5.CKEditor"
+    },
+    "seo": {
+      "type": "component",
+      "repeatable": false,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        },
+        "translate": {
+          "translate": "translate"
+        }
+      },
+      "component": "shared.seo"
     }
   }
 }

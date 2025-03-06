@@ -1915,6 +1915,7 @@ export interface ApiDisclaimerDisclaimer extends Schema.SingleType {
     singularName: 'disclaimer';
     pluralName: 'disclaimers';
     displayName: 'Disclaimer';
+    description: '';
   };
   options: {
     draftAndPublish: true;
@@ -1949,6 +1950,15 @@ export interface ApiDisclaimerDisclaimer extends Schema.SingleType {
       Attribute.SetPluginOptions<{
         i18n: {
           localized: true;
+        };
+      }>;
+    seo: Attribute.Component<'shared.seo'> &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+        translate: {
+          translate: 'translate';
         };
       }>;
     createdAt: Attribute.DateTime;
@@ -2477,6 +2487,7 @@ export interface ApiLegalLegal extends Schema.SingleType {
     singularName: 'legal';
     pluralName: 'legals';
     displayName: 'Legal';
+    description: '';
   };
   options: {
     draftAndPublish: true;
@@ -2512,6 +2523,15 @@ export interface ApiLegalLegal extends Schema.SingleType {
       Attribute.SetPluginOptions<{
         i18n: {
           localized: true;
+        };
+      }>;
+    seo: Attribute.Component<'shared.seo'> &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+        translate: {
+          translate: 'translate';
         };
       }>;
     createdAt: Attribute.DateTime;
@@ -2840,7 +2860,7 @@ export interface ApiPrivacyPolicyPrivacyPolicy extends Schema.SingleType {
           localized: true;
         };
       }>;
-    seo: Attribute.Component<'shared.seo', true> &
+    seo: Attribute.Component<'shared.seo'> &
       Attribute.SetPluginOptions<{
         i18n: {
           localized: true;
@@ -3545,6 +3565,7 @@ export interface ApiTAndCTAndC extends Schema.SingleType {
     singularName: 't-and-c';
     pluralName: 't-and-cs';
     displayName: 'T&C';
+    description: '';
   };
   options: {
     draftAndPublish: true;
@@ -3580,6 +3601,15 @@ export interface ApiTAndCTAndC extends Schema.SingleType {
       Attribute.SetPluginOptions<{
         i18n: {
           localized: true;
+        };
+      }>;
+    seo: Attribute.Component<'shared.seo'> &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+        translate: {
+          translate: 'translate';
         };
       }>;
     createdAt: Attribute.DateTime;

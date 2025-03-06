@@ -4,7 +4,8 @@
   "info": {
     "singularName": "disclaimer",
     "pluralName": "disclaimers",
-    "displayName": "Disclaimer"
+    "displayName": "Disclaimer",
+    "description": ""
   },
   "options": {
     "draftAndPublish": true
@@ -40,6 +41,19 @@
       },
       "required": true,
       "customField": "plugin::ckeditor5.CKEditor"
+    },
+    "seo": {
+      "type": "component",
+      "repeatable": false,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        },
+        "translate": {
+          "translate": "translate"
+        }
+      },
+      "component": "shared.seo"
     }
   }
 }
