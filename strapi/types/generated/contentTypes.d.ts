@@ -2599,7 +2599,6 @@ export interface ApiNewsArticleNewsArticle extends Schema.CollectionType {
         };
       }>;
     thumbnailImage: Attribute.Media<'images'> &
-      Attribute.Required &
       Attribute.SetPluginOptions<{
         i18n: {
           localized: false;
