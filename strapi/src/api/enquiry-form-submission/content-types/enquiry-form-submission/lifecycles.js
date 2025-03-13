@@ -16,6 +16,12 @@ module.exports = {
     // Fetch the complete report data if a report ID exists
     const reportData = populatedResult.report;
 
+    // Recommended approach: Change your time ranges in Strapi
+    // For complete coverage, use these two configurations:
+    // 1. startTime: "00:00", endTime: "18:59"
+    // 2. startTime: "19:00", endTime: "00:00"  (instead of 23:59)
+
+    // But if you can't change the data, use this function which handles end-inclusive time ranges:
     const getActiveEmailAddresses = async () => {
       try {
         const commonConfig = await strapi.entityService.findOne(
@@ -26,40 +32,58 @@ module.exports = {
           }
         );
 
+        console.log("Common Config Fetched: ", commonConfig);
+
         if (!commonConfig?.emailConfig) {
           console.log("No email configuration found, using default addresses");
-          return [];
+          return ["sales2@univdatos.com"]; // Always return default
         }
 
-        // Get current time in IST using explicit options
-        const currentTimeIST = new Date().toLocaleString("en-US", {
+        // Get current time in IST using more robust approach
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat("en-US", {
           timeZone: "Asia/Kolkata",
-          hour12: false, // Use 24-hour format
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
         });
 
-        // Parse the IST time string to get hours, minutes, seconds
-        const [_, time] = currentTimeIST.split(", "); // Split date and time
-        const [hours, minutes, seconds] = time.split(":");
+        const parts = formatter.formatToParts(now);
+        let hours = "";
+        let minutes = "";
 
-        // Format time string in HH:mm:ss format
+        parts.forEach((part) => {
+          if (part.type === "hour") hours = part.value;
+          if (part.type === "minute") minutes = part.value;
+        });
+
+        // Get current minutes since midnight
+        const currentTotalMinutes = parseInt(hours) * 60 + parseInt(minutes);
+
+        // For logging
         const currentTimeString = `${hours.padStart(2, "0")}:${minutes.padStart(
           2,
           "0"
-        )}:${seconds.padStart(2, "0")}`;
-
+        )}`;
         console.log(
-          `Current time (IST) for email routing: ${currentTimeString}`
+          `Current time (IST): ${currentTimeString} (${currentTotalMinutes} minutes since midnight)`
         );
 
-        // Helper function to adjust only end times
-        const adjustEndTime = (timeStr) => {
-          const [hours, minutes, seconds] = timeStr.split(":");
-          if (seconds === "00") {
-            return `${hours}:${minutes}:59`;
+        // Helper function to convert time string to minutes, handling special case for "00:00"
+        const timeToMinutes = (timeStr) => {
+          if (timeStr === "00:00") {
+            return 0; // Midnight
           }
-          return timeStr;
+
+          if (timeStr === "24:00" || timeStr === "23:59") {
+            return 24 * 60; // End of day - treat as inclusive end boundary (1440 minutes)
+          }
+
+          const [h, m] = timeStr.split(":").map((num) => parseInt(num));
+          return h * 60 + m;
         };
 
+        // Process each email config
         const activeEmails = commonConfig.emailConfig
           .filter((config) => {
             if (!config.startTime || !config.endTime || !config.email) {
@@ -68,36 +92,48 @@ module.exports = {
             }
 
             const start = config.startTime;
-            const end = adjustEndTime(config.endTime);
+            // Special case: if end time is 23:59, treat it as inclusive of the whole minute
+            const end = config.endTime === "23:59" ? "24:00" : config.endTime;
 
-            console.log(`Checking time range for ${config.email}:`);
-            if (config.endTime !== end) {
-              console.log(`Adjusted end time from ${config.endTime} to ${end}`);
-            }
+            const startMinutes = timeToMinutes(start);
+            const endMinutes = timeToMinutes(end);
+
             console.log(
-              `Range: ${start} to ${end} (current IST: ${currentTimeString})`
+              `Checking ${config.email}: ${start}-${end} (${startMinutes}-${endMinutes} minutes)`
             );
 
             // Handle time range crossing midnight
-            if (end < start) {
+            if (
+              endMinutes < startMinutes ||
+              (end === "24:00" && start !== "00:00")
+            ) {
               const isActive =
-                currentTimeString >= start || currentTimeString <= end;
+                currentTotalMinutes >= startMinutes ||
+                currentTotalMinutes < endMinutes; // < for exclusive end time
               console.log(`Crosses midnight - Active: ${isActive}`);
               return isActive;
+            } else {
+              // Regular time range (doesn't cross midnight)
+              const isActive =
+                currentTotalMinutes >= startMinutes &&
+                currentTotalMinutes < endMinutes; // < for exclusive end time
+              console.log(`Regular range - Active: ${isActive}`);
+              return isActive;
             }
-
-            const isActive =
-              currentTimeString >= start && currentTimeString <= end;
-            console.log(`Regular range - Active: ${isActive}`);
-            return isActive;
           })
           .map((config) => config.email);
 
-        console.log("Active email addresses:", activeEmails);
-        return activeEmails;
+        // Always include the default email
+        const allEmails = ["sales2@univdatos.com", ...activeEmails];
+
+        // Remove duplicates
+        const uniqueEmails = [...new Set(allEmails)];
+        console.log("Final email recipients:", uniqueEmails);
+
+        return uniqueEmails;
       } catch (error) {
         console.error("Error fetching email configuration:", error);
-        return [];
+        return ["sales2@univdatos.com"]; // Fallback on error
       }
     };
 
@@ -396,12 +432,10 @@ module.exports = {
         {
           data: {
             emailStatus: {
-              set: {
-                salesNotificationSent: salesEmailResult.status === "fulfilled",
-                customerAcknowledgmentSent:
-                  customerEmailResult.status === "fulfilled",
-                timestamp: new Date().toISOString(),
-              },
+              salesNotificationSent: salesEmailResult.status === "fulfilled",
+              customerAcknowledgmentSent:
+                customerEmailResult.status === "fulfilled",
+              timestamp: new Date().toISOString(),
             },
           },
         }

@@ -1565,6 +1565,49 @@ export interface ApiCallbackFormSubmissionCallbackFormSubmission
   };
 }
 
+export interface ApiCancellationPolicyCancellationPolicy
+  extends Schema.SingleType {
+  collectionName: 'cancellation_policies';
+  info: {
+    singularName: 'cancellation-policy';
+    pluralName: 'cancellation-policies';
+    displayName: 'Cancellation Policy';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    heroHeading: Attribute.String & Attribute.Required;
+    description: Attribute.RichText &
+      Attribute.Required &
+      Attribute.CustomField<
+        'plugin::ckeditor5.CKEditor',
+        {
+          preset: 'toolbar';
+        }
+      >;
+    seo: Attribute.Component<'shared.seo'>;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    publishedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::cancellation-policy.cancellation-policy',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::cancellation-policy.cancellation-policy',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    sitemap_exclude: Attribute.Boolean &
+      Attribute.Private &
+      Attribute.DefaultTo<false>;
+  };
+}
+
 export interface ApiCommonCommon extends Schema.SingleType {
   collectionName: 'commons';
   info: {
@@ -3038,18 +3081,8 @@ export interface ApiReportReport extends Schema.CollectionType {
     > &
       Attribute.SetPluginOptions<{
         translate: {
-          translate: 'translate';
+          translate: 'copy';
         };
-      }>;
-    medusaID: Attribute.String &
-      Attribute.Required &
-      Attribute.SetPluginOptions<{
-        i18n: {
-          localized: false;
-        };
-      }> &
-      Attribute.SetMinMaxLength<{
-        minLength: 1;
       }>;
     faqList: Attribute.Component<'utils.list-with-editor', true> &
       Attribute.SetPluginOptions<{
@@ -3174,7 +3207,7 @@ export interface ApiReportReport extends Schema.CollectionType {
     > &
       Attribute.SetPluginOptions<{
         translate: {
-          translate: 'translate';
+          translate: 'copy';
         };
       }>;
     leftSectionPrimaryCTAButton: Attribute.Component<'utils.navigation-link'> &
@@ -3735,6 +3768,7 @@ declare module '@strapi/types' {
       'api::author.author': ApiAuthorAuthor;
       'api::blog.blog': ApiBlogBlog;
       'api::callback-form-submission.callback-form-submission': ApiCallbackFormSubmissionCallbackFormSubmission;
+      'api::cancellation-policy.cancellation-policy': ApiCancellationPolicyCancellationPolicy;
       'api::common.common': ApiCommonCommon;
       'api::contact-form-submission.contact-form-submission': ApiContactFormSubmissionContactFormSubmission;
       'api::contact-page.contact-page': ApiContactPageContactPage;

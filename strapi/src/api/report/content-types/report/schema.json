@@ -96,23 +96,12 @@
       "type": "relation",
       "relation": "manyToOne",
       "target": "api::industry.industry",
-      "inversedBy": "reports",
       "pluginOptions": {
         "translate": {
-          "translate": "translate"
-        }
-      }
-    },
-    "medusaID": {
-      "pluginOptions": {
-        "i18n": {
-          "localized": false
+          "translate": "copy"
         }
       },
-      "type": "string",
-      "required": true,
-      "unique": false,
-      "minLength": 1
+      "inversedBy": "reports"
     },
     "faqList": {
       "type": "component",
@@ -253,12 +242,12 @@
       "type": "relation",
       "relation": "manyToOne",
       "target": "api::geography.geography",
-      "inversedBy": "reports",
       "pluginOptions": {
         "translate": {
-          "translate": "translate"
+          "translate": "copy"
         }
-      }
+      },
+      "inversedBy": "reports"
     },
     "leftSectionPrimaryCTAButton": {
       "type": "component",
