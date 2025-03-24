@@ -2124,29 +2124,14 @@ export interface ApiGeographyGeography extends Schema.CollectionType {
     singularName: 'geography';
     pluralName: 'geographies';
     displayName: 'Geography';
+    description: '';
   };
   options: {
     draftAndPublish: true;
   };
-  pluginOptions: {
-    i18n: {
-      localized: true;
-    };
-  };
   attributes: {
-    name: Attribute.String &
-      Attribute.Required &
-      Attribute.SetPluginOptions<{
-        i18n: {
-          localized: true;
-        };
-      }>;
-    slug: Attribute.UID<'api::geography.geography', 'name'> &
-      Attribute.SetPluginOptions<{
-        i18n: {
-          localized: true;
-        };
-      }>;
+    name: Attribute.String & Attribute.Required;
+    slug: Attribute.UID<'api::geography.geography', 'name'>;
     reports: Attribute.Relation<
       'api::geography.geography',
       'oneToMany',
@@ -2170,12 +2155,6 @@ export interface ApiGeographyGeography extends Schema.CollectionType {
     sitemap_exclude: Attribute.Boolean &
       Attribute.Private &
       Attribute.DefaultTo<false>;
-    localizations: Attribute.Relation<
-      'api::geography.geography',
-      'oneToMany',
-      'api::geography.geography'
-    >;
-    locale: Attribute.String;
   };
 }
 
@@ -3026,23 +3005,22 @@ export interface ApiReportReport extends Schema.CollectionType {
     totalPagesCount: Attribute.Integer &
       Attribute.SetPluginOptions<{
         i18n: {
-          localized: true;
+          localized: false;
         };
       }>;
     reportID: Attribute.String &
       Attribute.SetPluginOptions<{
         i18n: {
-          localized: true;
+          localized: false;
         };
         translate: {
           translate: 'translate';
         };
       }>;
     tablesCount: Attribute.Integer &
-      Attribute.Required &
       Attribute.SetPluginOptions<{
         i18n: {
-          localized: true;
+          localized: false;
         };
       }> &
       Attribute.SetMinMax<
@@ -3052,10 +3030,9 @@ export interface ApiReportReport extends Schema.CollectionType {
         number
       >;
     figuresCount: Attribute.Integer &
-      Attribute.Required &
       Attribute.SetPluginOptions<{
         i18n: {
-          localized: true;
+          localized: false;
         };
       }> &
       Attribute.SetMinMax<
@@ -3271,7 +3248,7 @@ export interface ApiReportReport extends Schema.CollectionType {
     > &
       Attribute.SetPluginOptions<{
         translate: {
-          translate: 'translate';
+          translate: 'copy';
         };
       }>;
     enquiry_form_submissions: Attribute.Relation<
@@ -3281,7 +3258,7 @@ export interface ApiReportReport extends Schema.CollectionType {
     > &
       Attribute.SetPluginOptions<{
         translate: {
-          translate: 'translate';
+          translate: 'copy';
         };
       }>;
     status: Attribute.Enumeration<['LIVE', 'UPCOMING']> &
@@ -3318,7 +3295,7 @@ export interface ApiReportReport extends Schema.CollectionType {
     oldPublishedAt: Attribute.DateTime &
       Attribute.SetPluginOptions<{
         i18n: {
-          localized: true;
+          localized: false;
         };
       }>;
     productId: Attribute.String &
@@ -3328,6 +3305,12 @@ export interface ApiReportReport extends Schema.CollectionType {
         };
         translate: {
           translate: 'translate';
+        };
+      }>;
+    slugCopy: Attribute.String &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
         };
       }>;
     createdAt: Attribute.DateTime;
