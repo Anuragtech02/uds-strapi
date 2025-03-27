@@ -42,7 +42,7 @@
       "type": "integer",
       "pluginOptions": {
         "i18n": {
-          "localized": true
+          "localized": false
         }
       }
     },
@@ -50,7 +50,7 @@
       "type": "string",
       "pluginOptions": {
         "i18n": {
-          "localized": true
+          "localized": false
         },
         "translate": {
           "translate": "translate"
@@ -60,21 +60,21 @@
     "tablesCount": {
       "pluginOptions": {
         "i18n": {
-          "localized": true
+          "localized": false
         }
       },
       "type": "integer",
-      "required": true,
+      "required": false,
       "min": 0
     },
     "figuresCount": {
       "pluginOptions": {
         "i18n": {
-          "localized": true
+          "localized": false
         }
       },
       "type": "integer",
-      "required": true,
+      "required": false,
       "min": 0
     },
     "tableOfContent": {
@@ -333,12 +333,12 @@
       "type": "relation",
       "relation": "manyToMany",
       "target": "api::coupon.coupon",
-      "mappedBy": "validForReports",
       "pluginOptions": {
         "translate": {
-          "translate": "translate"
+          "translate": "copy"
         }
-      }
+      },
+      "mappedBy": "validForReports"
     },
     "enquiry_form_submissions": {
       "type": "relation",
@@ -346,7 +346,7 @@
       "target": "api::enquiry-form-submission.enquiry-form-submission",
       "pluginOptions": {
         "translate": {
-          "translate": "translate"
+          "translate": "copy"
         }
       },
       "mappedBy": "report"
@@ -393,7 +393,7 @@
     "oldPublishedAt": {
       "pluginOptions": {
         "i18n": {
-          "localized": true
+          "localized": false
         }
       },
       "type": "datetime"
@@ -405,6 +405,14 @@
         },
         "translate": {
           "translate": "translate"
+        }
+      },
+      "type": "string"
+    },
+    "slugCopy": {
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
         }
       },
       "type": "string"
