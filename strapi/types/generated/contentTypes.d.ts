@@ -3270,13 +3270,12 @@ export interface ApiReportReport extends Schema.CollectionType {
       }> &
       Attribute.DefaultTo<'UPCOMING'>;
     slug: Attribute.String &
-      Attribute.Unique &
       Attribute.SetPluginOptions<{
         i18n: {
-          localized: true;
+          localized: false;
         };
         translate: {
-          translate: 'translate';
+          translate: 'copy';
         };
       }>;
     researchMethodology: Attribute.RichText &

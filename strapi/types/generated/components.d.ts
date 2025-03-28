@@ -209,70 +209,6 @@ export interface HomeStatsCard extends Schema.Component {
   };
 }
 
-export interface FooterFooterCta extends Schema.Component {
-  collectionName: 'components_footer_footer_ctas';
-  info: {
-    displayName: 'Footer CTA';
-    description: '';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    description: Attribute.Text & Attribute.Required;
-    ctaButton: Attribute.Component<'utils.navigation-link'> &
-      Attribute.Required;
-  };
-}
-
-export interface FooterCompanyInfo extends Schema.Component {
-  collectionName: 'components_footer_company_infos';
-  info: {
-    displayName: 'Company Info';
-    description: '';
-  };
-  attributes: {
-    companyDescription: Attribute.Text & Attribute.Required;
-    logo: Attribute.Media<'images'> & Attribute.Required;
-  };
-}
-
-export interface AboutPageVIsionMissionCard extends Schema.Component {
-  collectionName: 'components_about_page_v_ision_mission_cards';
-  info: {
-    displayName: 'VIsion Mission Card';
-    icon: 'grid';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    description: Attribute.String & Attribute.Required;
-    image: Attribute.Media<'images'> & Attribute.Required;
-  };
-}
-
-export interface FormEmailStatus extends Schema.Component {
-  collectionName: 'components_form_email_statuses';
-  info: {
-    displayName: 'Email Status';
-  };
-  attributes: {
-    customerAcknowledgmentSent: Attribute.Boolean;
-    salesNotificationSent: Attribute.Boolean;
-    timestamp: Attribute.DateTime;
-  };
-}
-
-export interface EmailEmailTime extends Schema.Component {
-  collectionName: 'components_email_email_times';
-  info: {
-    displayName: 'Email Time';
-    description: '';
-  };
-  attributes: {
-    email: Attribute.Email & Attribute.Required;
-    startTime: Attribute.Time & Attribute.Required;
-    endTime: Attribute.Time & Attribute.Required;
-  };
-}
-
 export interface OrderBillingDetails extends Schema.Component {
   collectionName: 'components_order_billing_details';
   info: {
@@ -304,6 +240,70 @@ export interface OrderBillingDetails extends Schema.Component {
   };
 }
 
+export interface FormEmailStatus extends Schema.Component {
+  collectionName: 'components_form_email_statuses';
+  info: {
+    displayName: 'Email Status';
+  };
+  attributes: {
+    customerAcknowledgmentSent: Attribute.Boolean;
+    salesNotificationSent: Attribute.Boolean;
+    timestamp: Attribute.DateTime;
+  };
+}
+
+export interface FooterFooterCta extends Schema.Component {
+  collectionName: 'components_footer_footer_ctas';
+  info: {
+    displayName: 'Footer CTA';
+    description: '';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    description: Attribute.Text & Attribute.Required;
+    ctaButton: Attribute.Component<'utils.navigation-link'> &
+      Attribute.Required;
+  };
+}
+
+export interface FooterCompanyInfo extends Schema.Component {
+  collectionName: 'components_footer_company_infos';
+  info: {
+    displayName: 'Company Info';
+    description: '';
+  };
+  attributes: {
+    companyDescription: Attribute.Text & Attribute.Required;
+    logo: Attribute.Media<'images'> & Attribute.Required;
+  };
+}
+
+export interface EmailEmailTime extends Schema.Component {
+  collectionName: 'components_email_email_times';
+  info: {
+    displayName: 'Email Time';
+    description: '';
+  };
+  attributes: {
+    email: Attribute.Email & Attribute.Required;
+    startTime: Attribute.Time & Attribute.Required;
+    endTime: Attribute.Time & Attribute.Required;
+  };
+}
+
+export interface AboutPageVIsionMissionCard extends Schema.Component {
+  collectionName: 'components_about_page_v_ision_mission_cards';
+  info: {
+    displayName: 'VIsion Mission Card';
+    icon: 'grid';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    description: Attribute.String & Attribute.Required;
+    image: Attribute.Media<'images'> & Attribute.Required;
+  };
+}
+
 declare module '@strapi/types' {
   export module Shared {
     export interface Components {
@@ -318,12 +318,12 @@ declare module '@strapi/types' {
       'report.product-variant': ReportProductVariant;
       'report.price-item': ReportPriceItem;
       'home.stats-card': HomeStatsCard;
+      'order.billing-details': OrderBillingDetails;
+      'form.email-status': FormEmailStatus;
       'footer.footer-cta': FooterFooterCta;
       'footer.company-info': FooterCompanyInfo;
-      'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
-      'form.email-status': FormEmailStatus;
       'email.email-time': EmailEmailTime;
-      'order.billing-details': OrderBillingDetails;
+      'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
     }
   }
 }

@@ -368,14 +368,14 @@
     "slug": {
       "pluginOptions": {
         "i18n": {
-          "localized": true
+          "localized": false
         },
         "translate": {
-          "translate": "translate"
+          "translate": "copy"
         }
       },
       "type": "string",
-      "unique": true
+      "unique": false
     },
     "researchMethodology": {
       "pluginOptions": {
