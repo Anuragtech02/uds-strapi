@@ -196,19 +196,6 @@ export interface ReportPriceItem extends Schema.Component {
   };
 }
 
-export interface HomeStatsCard extends Schema.Component {
-  collectionName: 'components_home_stats_cards';
-  info: {
-    displayName: 'Stats Card';
-  };
-  attributes: {
-    title: Attribute.String & Attribute.Required;
-    countFrom: Attribute.Integer & Attribute.Required;
-    countTo: Attribute.Integer & Attribute.Required;
-    icon: Attribute.Media<'images'> & Attribute.Required;
-  };
-}
-
 export interface OrderBillingDetails extends Schema.Component {
   collectionName: 'components_order_billing_details';
   info: {
@@ -237,6 +224,19 @@ export interface OrderBillingDetails extends Schema.Component {
         minLength: 10;
       }>;
     orderNotes: Attribute.Text;
+  };
+}
+
+export interface HomeStatsCard extends Schema.Component {
+  collectionName: 'components_home_stats_cards';
+  info: {
+    displayName: 'Stats Card';
+  };
+  attributes: {
+    title: Attribute.String & Attribute.Required;
+    countFrom: Attribute.Integer & Attribute.Required;
+    countTo: Attribute.Integer & Attribute.Required;
+    icon: Attribute.Media<'images'> & Attribute.Required;
   };
 }
 
@@ -317,8 +317,8 @@ declare module '@strapi/types' {
       'shared.meta-social': SharedMetaSocial;
       'report.product-variant': ReportProductVariant;
       'report.price-item': ReportPriceItem;
-      'home.stats-card': HomeStatsCard;
       'order.billing-details': OrderBillingDetails;
+      'home.stats-card': HomeStatsCard;
       'form.email-status': FormEmailStatus;
       'footer.footer-cta': FooterFooterCta;
       'footer.company-info': FooterCompanyInfo;
