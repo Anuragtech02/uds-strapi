@@ -18,11 +18,11 @@
     "title": {
       "type": "string",
       "required": true,
-      "maxLength": 300
+      "maxLength": 400
     },
     "description": {
       "type": "string",
-      "maxLength": 300,
+      "maxLength": 400,
       "required": true
     },
     "image": {
