@@ -22,7 +22,7 @@
     },
     "description": {
       "type": "string",
-      "maxLength": 300,
+      "maxLength": 400,
       "required": true
     },
     "image": {
