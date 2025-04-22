@@ -73,7 +73,7 @@
       "inversedBy": "news_articles",
       "pluginOptions": {
         "translate": {
-          "translate": "translate"
+          "translate": "copy"
         }
       }
     },
@@ -116,15 +116,15 @@
     "slug": {
       "pluginOptions": {
         "i18n": {
-          "localized": true
+          "localized": false
         },
         "translate": {
-          "translate": "translate"
+          "translate": "copy"
         }
       },
       "type": "string",
       "required": false,
-      "unique": true
+      "unique": false
     },
     "oldPublishedAt": {
       "pluginOptions": {
