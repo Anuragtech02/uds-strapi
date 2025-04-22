@@ -133,6 +133,14 @@
         }
       },
       "type": "datetime"
+    },
+    "slugCopy": {
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      },
+      "type": "string"
     }
   }
 }
