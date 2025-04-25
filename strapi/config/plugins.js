@@ -261,25 +261,25 @@ module.exports = ({ env }) => ({
         "api::user.user",
         "api::user.api",
       ],
-      supportedLanguages: ["en", "ja", "es", "fr"], // Add your languages
-      defaults: {
-        // Default transformation for entries
-        transform: async (config, entry) => {
-          // Generate alternate language URLs
-          entry.alternates = config.supportedLanguages.map((lang) => ({
-            hreflang: lang,
-            href: `${config.hostname}/${lang}${entry.url}`,
-          }));
+      // supportedLanguages: ["en", "ja", "es", "fr"], // Add your languages
+      // defaults: {
+      //   // Default transformation for entries
+      //   transform: async (config, entry) => {
+      //     // Generate alternate language URLs
+      //     entry.alternates = config.supportedLanguages.map((lang) => ({
+      //       hreflang: lang,
+      //       href: `${config.hostname}/${lang}${entry.url}`,
+      //     }));
 
-          // Add the default language (without prefix)
-          entry.alternates.push({
-            hreflang: "x-default",
-            href: `${config.hostname}${entry.url}`,
-          });
+      //     // Add the default language (without prefix)
+      //     entry.alternates.push({
+      //       hreflang: "x-default",
+      //       href: `${config.hostname}${entry.url}`,
+      //     });
 
-          return entry;
-        },
-      },
+      //     return entry;
+      //   },
+      // },
     },
   },
   email: {
