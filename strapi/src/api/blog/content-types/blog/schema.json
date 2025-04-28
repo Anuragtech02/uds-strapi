@@ -73,7 +73,7 @@
       "inversedBy": "blogs",
       "pluginOptions": {
         "translate": {
-          "translate": "translate"
+          "translate": "copy"
         }
       }
     },
@@ -109,7 +109,7 @@
       "target": "api::author.author",
       "pluginOptions": {
         "translate": {
-          "translate": "translate"
+          "translate": "copy"
         }
       },
       "inversedBy": "blogs"
@@ -128,15 +128,15 @@
     "slug": {
       "pluginOptions": {
         "i18n": {
-          "localized": true
+          "localized": false
         },
         "translate": {
-          "translate": "translate"
+          "translate": "copy"
         }
       },
       "type": "string",
-      "unique": true,
-      "required": true
+      "required": false,
+      "unique": false
     },
     "oldPublishedAt": {
       "pluginOptions": {
@@ -145,6 +145,14 @@
         }
       },
       "type": "datetime"
+    },
+    "slugCopy": {
+      "pluginOptions": {
+        "i18n": {
+          "localized": false
+        }
+      },
+      "type": "string"
     }
   }
 }

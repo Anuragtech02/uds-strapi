@@ -109,7 +109,7 @@ export interface SharedSeo extends Schema.Component {
       Attribute.Required &
       Attribute.SetMinMaxLength<{
         minLength: 20;
-        maxLength: 300;
+        maxLength: 400;
       }>;
     metaImage: Attribute.Media<'images' | 'files' | 'videos'>;
     metaSocial: Attribute.Component<'shared.meta-social', true>;
@@ -140,12 +140,12 @@ export interface SharedMetaSocial extends Schema.Component {
     title: Attribute.String &
       Attribute.Required &
       Attribute.SetMinMaxLength<{
-        maxLength: 300;
+        maxLength: 400;
       }>;
     description: Attribute.String &
       Attribute.Required &
       Attribute.SetMinMaxLength<{
-        maxLength: 300;
+        maxLength: 400;
       }>;
     image: Attribute.Media<'images' | 'files' | 'videos'>;
   };
@@ -193,37 +193,6 @@ export interface ReportPriceItem extends Schema.Component {
       Attribute.Required &
       Attribute.DefaultTo<'USD'>;
     amount: Attribute.Decimal & Attribute.Required & Attribute.DefaultTo<3999>;
-  };
-}
-
-export interface OrderBillingDetails extends Schema.Component {
-  collectionName: 'components_order_billing_details';
-  info: {
-    displayName: 'Billing Details';
-    description: 'Customer billing information for orders';
-  };
-  attributes: {
-    firstName: Attribute.String &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        minLength: 2;
-      }>;
-    lastName: Attribute.String &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        minLength: 2;
-      }>;
-    email: Attribute.Email & Attribute.Required;
-    phone: Attribute.String & Attribute.Required;
-    country: Attribute.String & Attribute.Required;
-    state: Attribute.String;
-    city: Attribute.String & Attribute.Required;
-    address: Attribute.Text &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        minLength: 10;
-      }>;
-    orderNotes: Attribute.Text;
   };
 }
 
@@ -279,15 +248,34 @@ export interface AboutPageVIsionMissionCard extends Schema.Component {
   };
 }
 
-export interface FormEmailStatus extends Schema.Component {
-  collectionName: 'components_form_email_statuses';
+export interface OrderBillingDetails extends Schema.Component {
+  collectionName: 'components_order_billing_details';
   info: {
-    displayName: 'Email Status';
+    displayName: 'Billing Details';
+    description: 'Customer billing information for orders';
   };
   attributes: {
-    customerAcknowledgmentSent: Attribute.Boolean;
-    salesNotificationSent: Attribute.Boolean;
-    timestamp: Attribute.DateTime;
+    firstName: Attribute.String &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        minLength: 2;
+      }>;
+    lastName: Attribute.String &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        minLength: 2;
+      }>;
+    email: Attribute.Email & Attribute.Required;
+    phone: Attribute.String & Attribute.Required;
+    country: Attribute.String & Attribute.Required;
+    state: Attribute.String;
+    city: Attribute.String & Attribute.Required;
+    address: Attribute.Text &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        minLength: 10;
+      }>;
+    orderNotes: Attribute.Text;
   };
 }
 
@@ -304,6 +292,18 @@ export interface EmailEmailTime extends Schema.Component {
   };
 }
 
+export interface FormEmailStatus extends Schema.Component {
+  collectionName: 'components_form_email_statuses';
+  info: {
+    displayName: 'Email Status';
+  };
+  attributes: {
+    customerAcknowledgmentSent: Attribute.Boolean;
+    salesNotificationSent: Attribute.Boolean;
+    timestamp: Attribute.DateTime;
+  };
+}
+
 declare module '@strapi/types' {
   export module Shared {
     export interface Components {
@@ -317,13 +317,13 @@ declare module '@strapi/types' {
       'shared.meta-social': SharedMetaSocial;
       'report.product-variant': ReportProductVariant;
       'report.price-item': ReportPriceItem;
-      'order.billing-details': OrderBillingDetails;
       'home.stats-card': HomeStatsCard;
       'footer.footer-cta': FooterFooterCta;
       'footer.company-info': FooterCompanyInfo;
       'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
-      'form.email-status': FormEmailStatus;
+      'order.billing-details': OrderBillingDetails;
       'email.email-time': EmailEmailTime;
+      'form.email-status': FormEmailStatus;
     }
   }
 }

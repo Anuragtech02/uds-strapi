@@ -2586,7 +2586,7 @@ export interface ApiNewsArticleNewsArticle extends Schema.CollectionType {
     > &
       Attribute.SetPluginOptions<{
         translate: {
-          translate: 'translate';
+          translate: 'copy';
         };
       }>;
     seo: Attribute.Component<'shared.seo'> &
@@ -2619,16 +2619,21 @@ export interface ApiNewsArticleNewsArticle extends Schema.CollectionType {
         };
       }>;
     slug: Attribute.String &
-      Attribute.Unique &
       Attribute.SetPluginOptions<{
         i18n: {
-          localized: true;
+          localized: false;
         };
         translate: {
-          translate: 'translate';
+          translate: 'copy';
         };
       }>;
     oldPublishedAt: Attribute.DateTime &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    slugCopy: Attribute.String &
       Attribute.SetPluginOptions<{
         i18n: {
           localized: false;
@@ -3210,13 +3215,12 @@ export interface ApiReportReport extends Schema.CollectionType {
       }> &
       Attribute.DefaultTo<'UPCOMING'>;
     slug: Attribute.String &
-      Attribute.Unique &
       Attribute.SetPluginOptions<{
         i18n: {
-          localized: true;
+          localized: false;
         };
         translate: {
-          translate: 'translate';
+          translate: 'copy';
         };
       }>;
     researchMethodology: Attribute.RichText &
