@@ -37,7 +37,7 @@
           "translate": "translate"
         }
       },
-      "type": "string",
+      "type": "text",
       "required": true
     },
     "thumbnailImage": {
