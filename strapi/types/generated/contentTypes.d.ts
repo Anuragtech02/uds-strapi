@@ -1342,7 +1342,7 @@ export interface ApiBlogBlog extends Schema.CollectionType {
     };
   };
   attributes: {
-    title: Attribute.String &
+    title: Attribute.Text &
       Attribute.Required &
       Attribute.SetPluginOptions<{
         i18n: {
@@ -1388,7 +1388,7 @@ export interface ApiBlogBlog extends Schema.CollectionType {
     > &
       Attribute.SetPluginOptions<{
         translate: {
-          translate: 'translate';
+          translate: 'copy';
         };
       }>;
     seo: Attribute.Component<'shared.seo'> &
@@ -1416,7 +1416,7 @@ export interface ApiBlogBlog extends Schema.CollectionType {
     > &
       Attribute.SetPluginOptions<{
         translate: {
-          translate: 'translate';
+          translate: 'copy';
         };
       }>;
     tags: Attribute.Text &
@@ -1429,17 +1429,21 @@ export interface ApiBlogBlog extends Schema.CollectionType {
         };
       }>;
     slug: Attribute.String &
-      Attribute.Required &
-      Attribute.Unique &
       Attribute.SetPluginOptions<{
         i18n: {
-          localized: true;
+          localized: false;
         };
         translate: {
-          translate: 'translate';
+          translate: 'copy';
         };
       }>;
     oldPublishedAt: Attribute.DateTime &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: false;
+        };
+      }>;
+    slugCopy: Attribute.String &
       Attribute.SetPluginOptions<{
         i18n: {
           localized: false;
@@ -2540,7 +2544,7 @@ export interface ApiNewsArticleNewsArticle extends Schema.CollectionType {
     };
   };
   attributes: {
-    title: Attribute.String &
+    title: Attribute.Text &
       Attribute.Required &
       Attribute.SetPluginOptions<{
         i18n: {
