@@ -248,6 +248,31 @@ export interface AboutPageVIsionMissionCard extends Schema.Component {
   };
 }
 
+export interface FormEmailStatus extends Schema.Component {
+  collectionName: 'components_form_email_statuses';
+  info: {
+    displayName: 'Email Status';
+  };
+  attributes: {
+    customerAcknowledgmentSent: Attribute.Boolean;
+    salesNotificationSent: Attribute.Boolean;
+    timestamp: Attribute.DateTime;
+  };
+}
+
+export interface EmailEmailTime extends Schema.Component {
+  collectionName: 'components_email_email_times';
+  info: {
+    displayName: 'Email Time';
+    description: '';
+  };
+  attributes: {
+    email: Attribute.Email & Attribute.Required;
+    startTime: Attribute.Time & Attribute.Required;
+    endTime: Attribute.Time & Attribute.Required;
+  };
+}
+
 export interface OrderBillingDetails extends Schema.Component {
   collectionName: 'components_order_billing_details';
   info: {
@@ -279,31 +304,6 @@ export interface OrderBillingDetails extends Schema.Component {
   };
 }
 
-export interface EmailEmailTime extends Schema.Component {
-  collectionName: 'components_email_email_times';
-  info: {
-    displayName: 'Email Time';
-    description: '';
-  };
-  attributes: {
-    email: Attribute.Email & Attribute.Required;
-    startTime: Attribute.Time & Attribute.Required;
-    endTime: Attribute.Time & Attribute.Required;
-  };
-}
-
-export interface FormEmailStatus extends Schema.Component {
-  collectionName: 'components_form_email_statuses';
-  info: {
-    displayName: 'Email Status';
-  };
-  attributes: {
-    customerAcknowledgmentSent: Attribute.Boolean;
-    salesNotificationSent: Attribute.Boolean;
-    timestamp: Attribute.DateTime;
-  };
-}
-
 declare module '@strapi/types' {
   export module Shared {
     export interface Components {
@@ -321,9 +321,9 @@ declare module '@strapi/types' {
       'footer.footer-cta': FooterFooterCta;
       'footer.company-info': FooterCompanyInfo;
       'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
-      'order.billing-details': OrderBillingDetails;
-      'email.email-time': EmailEmailTime;
       'form.email-status': FormEmailStatus;
+      'email.email-time': EmailEmailTime;
+      'order.billing-details': OrderBillingDetails;
     }
   }
 }

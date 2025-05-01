@@ -1352,7 +1352,7 @@ export interface ApiBlogBlog extends Schema.CollectionType {
           translate: 'translate';
         };
       }>;
-    shortDescription: Attribute.String &
+    shortDescription: Attribute.Text &
       Attribute.Required &
       Attribute.SetPluginOptions<{
         i18n: {
@@ -1516,12 +1516,24 @@ export interface ApiCancellationPolicyCancellationPolicy
     singularName: 'cancellation-policy';
     pluralName: 'cancellation-policies';
     displayName: 'Cancellation Policy';
+    description: '';
   };
   options: {
     draftAndPublish: true;
   };
+  pluginOptions: {
+    i18n: {
+      localized: true;
+    };
+  };
   attributes: {
-    heroHeading: Attribute.String & Attribute.Required;
+    heroHeading: Attribute.String &
+      Attribute.Required &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
     description: Attribute.RichText &
       Attribute.Required &
       Attribute.CustomField<
@@ -1530,7 +1542,12 @@ export interface ApiCancellationPolicyCancellationPolicy
           preset: 'toolbar';
         }
       >;
-    seo: Attribute.Component<'shared.seo'>;
+    seo: Attribute.Component<'shared.seo'> &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
@@ -1549,6 +1566,12 @@ export interface ApiCancellationPolicyCancellationPolicy
     sitemap_exclude: Attribute.Boolean &
       Attribute.Private &
       Attribute.DefaultTo<false>;
+    localizations: Attribute.Relation<
+      'api::cancellation-policy.cancellation-policy',
+      'oneToMany',
+      'api::cancellation-policy.cancellation-policy'
+    >;
+    locale: Attribute.String;
   };
 }
 
