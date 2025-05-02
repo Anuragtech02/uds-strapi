@@ -196,6 +196,37 @@ export interface ReportPriceItem extends Schema.Component {
   };
 }
 
+export interface OrderBillingDetails extends Schema.Component {
+  collectionName: 'components_order_billing_details';
+  info: {
+    displayName: 'Billing Details';
+    description: 'Customer billing information for orders';
+  };
+  attributes: {
+    firstName: Attribute.String &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        minLength: 2;
+      }>;
+    lastName: Attribute.String &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        minLength: 2;
+      }>;
+    email: Attribute.Email & Attribute.Required;
+    phone: Attribute.String & Attribute.Required;
+    country: Attribute.String & Attribute.Required;
+    state: Attribute.String;
+    city: Attribute.String & Attribute.Required;
+    address: Attribute.Text &
+      Attribute.Required &
+      Attribute.SetMinMaxLength<{
+        minLength: 10;
+      }>;
+    orderNotes: Attribute.Text;
+  };
+}
+
 export interface HomeStatsCard extends Schema.Component {
   collectionName: 'components_home_stats_cards';
   info: {
@@ -235,6 +266,19 @@ export interface FooterCompanyInfo extends Schema.Component {
   };
 }
 
+export interface EmailEmailTime extends Schema.Component {
+  collectionName: 'components_email_email_times';
+  info: {
+    displayName: 'Email Time';
+    description: '';
+  };
+  attributes: {
+    email: Attribute.Email & Attribute.Required;
+    startTime: Attribute.Time & Attribute.Required;
+    endTime: Attribute.Time & Attribute.Required;
+  };
+}
+
 export interface AboutPageVIsionMissionCard extends Schema.Component {
   collectionName: 'components_about_page_v_ision_mission_cards';
   info: {
@@ -260,50 +304,6 @@ export interface FormEmailStatus extends Schema.Component {
   };
 }
 
-export interface EmailEmailTime extends Schema.Component {
-  collectionName: 'components_email_email_times';
-  info: {
-    displayName: 'Email Time';
-    description: '';
-  };
-  attributes: {
-    email: Attribute.Email & Attribute.Required;
-    startTime: Attribute.Time & Attribute.Required;
-    endTime: Attribute.Time & Attribute.Required;
-  };
-}
-
-export interface OrderBillingDetails extends Schema.Component {
-  collectionName: 'components_order_billing_details';
-  info: {
-    displayName: 'Billing Details';
-    description: 'Customer billing information for orders';
-  };
-  attributes: {
-    firstName: Attribute.String &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        minLength: 2;
-      }>;
-    lastName: Attribute.String &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        minLength: 2;
-      }>;
-    email: Attribute.Email & Attribute.Required;
-    phone: Attribute.String & Attribute.Required;
-    country: Attribute.String & Attribute.Required;
-    state: Attribute.String;
-    city: Attribute.String & Attribute.Required;
-    address: Attribute.Text &
-      Attribute.Required &
-      Attribute.SetMinMaxLength<{
-        minLength: 10;
-      }>;
-    orderNotes: Attribute.Text;
-  };
-}
-
 declare module '@strapi/types' {
   export module Shared {
     export interface Components {
@@ -317,13 +317,13 @@ declare module '@strapi/types' {
       'shared.meta-social': SharedMetaSocial;
       'report.product-variant': ReportProductVariant;
       'report.price-item': ReportPriceItem;
+      'order.billing-details': OrderBillingDetails;
       'home.stats-card': HomeStatsCard;
       'footer.footer-cta': FooterFooterCta;
       'footer.company-info': FooterCompanyInfo;
+      'email.email-time': EmailEmailTime;
       'about-page.v-ision-mission-card': AboutPageVIsionMissionCard;
       'form.email-status': FormEmailStatus;
-      'email.email-time': EmailEmailTime;
-      'order.billing-details': OrderBillingDetails;
     }
   }
 }

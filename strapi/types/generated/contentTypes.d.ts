@@ -1541,7 +1541,12 @@ export interface ApiCancellationPolicyCancellationPolicy
         {
           preset: 'toolbar';
         }
-      >;
+      > &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
     seo: Attribute.Component<'shared.seo'> &
       Attribute.SetPluginOptions<{
         i18n: {
