@@ -221,17 +221,17 @@ module.exports = ({ env }) => ({
         blog: {
           field: "slug",
           references: "title",
-          shouldUpdateSlug: true,
+          shouldUpdateSlug: false,
         },
         report: {
           field: "slug",
           references: "title",
-          shouldUpdateSlug: true,
+          shouldUpdateSlug: false,
         },
         "news-article": {
           field: "slug",
           references: "title",
-          shouldUpdateSlug: true,
+          shouldUpdateSlug: false,
         },
       },
     },
