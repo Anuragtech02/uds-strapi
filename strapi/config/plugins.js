@@ -46,6 +46,9 @@ module.exports = ({ env }) => ({
             },
           },
         },
+        entriesQuery: {
+          locale: null,
+        },
       },
       blog: {
         settings: {
@@ -81,7 +84,7 @@ module.exports = ({ env }) => ({
           },
         },
         entriesQuery: {
-          locale: "en", // Since you only have English content
+          locale: null, // Since you only have English content
           populate: {
             industries: {
               fields: ["name", "slug"],
@@ -126,7 +129,7 @@ module.exports = ({ env }) => ({
           },
         },
         entriesQuery: {
-          locale: "en", // Since you only have English content
+          locale: null,
           populate: {
             industries: {
               fields: ["name", "slug"],
