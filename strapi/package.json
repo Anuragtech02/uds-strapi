@@ -39,7 +39,6 @@
     "strapi-plugin-sitemap": "^3.2.1",
     "strapi-plugin-slugify": "^2.3.8",
     "strapi-provider-rest-cache-redis": "^4.2.9",
-    "strapi-search-multilingual": "^1.2.5",
     "styled-components": "5.3.3",
     "uuid": "^11.0.5",
     "xml2js": "^0.6.2"

@@ -22,12 +22,26 @@ module.exports = {
     // Initialize Typesense on startup
     await initializeTypesense();
 
-    // Set up automatic content synchronization after server fully starts
     setTimeout(async () => {
-      await syncAllContent();
-    }, 10000);
+      // Use a separate process if possible, or run in background
+      try {
+        console.log("Starting background indexing process");
 
-    // Register lifecycle hooks for real-time updates
+        // Run indexing in the background to avoid blocking the main thread
+        // This won't be a true separate process, but it allows the server to continue
+        Promise.resolve().then(async () => {
+          try {
+            await syncAllContent();
+          } catch (error) {
+            console.error("Background indexing failed:", error);
+          }
+        });
+
+        console.log("Background indexing process scheduled");
+      } catch (error) {
+        console.error("Failed to start background indexing:", error);
+      }
+    }, 30000); // Wait 30 seconds after startup
 
     // Report lifecycle hooks
     strapi.db.lifecycles.subscribe({
@@ -74,8 +88,8 @@ module.exports = {
     // Add a scheduled task to ensure full sync daily
     if (strapi.cron) {
       strapi.cron.add({
-        "0 3 * * *": async () => {
-          // Run at 3 AM every day
+        "0 8 * * *": async () => {
+          // Run at 8 AM every day
           console.log("Running scheduled Typesense full sync");
           await syncAllContent();
         },

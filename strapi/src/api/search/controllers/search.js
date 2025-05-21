@@ -21,11 +21,19 @@ module.exports = {
   // Search API for frontend
   async search(ctx) {
     try {
-      const { term, locale = "en", tab, page = 1, pageSize = 10 } = ctx.query;
+      const {
+        term,
+        locale = "en",
+        tab,
+        page = 1,
+        pageSize = 10,
+        sort = "oldPublishedAt:desc", // Default sort by oldPublishedAt in descending order
+      } = ctx.query;
 
-      if (!term || term.length < 2) {
-        return ctx.badRequest("Search term must be at least 2 characters");
-      }
+      const minTermLength = 2;
+
+      // For empty searches, we still want to return results but sort by date
+      const isEmptySearch = !term || term.length < minTermLength;
 
       const typesense = getClient();
 
@@ -52,16 +60,27 @@ module.exports = {
         }
       }
 
+      // Parse sort parameter (field:direction)
+      let sortBy = "oldPublishedAt:desc"; // Default
+      if (sort) {
+        sortBy = sort;
+      }
+
       // Search parameters
       const searchParams = {
-        q: term,
+        q: isEmptySearch ? "*" : term, // Use wildcard for empty searches
         query_by: "title,shortDescription",
         filter_by: filterBy,
         per_page: parseInt(pageSize, 10),
         page: parseInt(page, 10),
-        preset: "multilingual", // Optimized for multilingual search
-        sort_by: "_text_match:desc",
+        sort_by: sortBy,
+        preset: "multilingual",
       };
+
+      // If we're doing a real search (non-empty term), add text match sorting
+      if (!isEmptySearch) {
+        searchParams.sort_by = `_text_match:desc,${sortBy}`;
+      }
 
       // Execute search
       const searchResults = await typesense
@@ -85,6 +104,11 @@ module.exports = {
           // Update counts
           counts[doc.entity] = (counts[doc.entity] || 0) + 1;
 
+          // Format oldPublishedAt as ISO string if it exists
+          const oldPublishedAt = doc.oldPublishedAt
+            ? new Date(parseInt(doc.oldPublishedAt)).toISOString()
+            : null;
+
           return {
             id: doc.id,
             title: doc.title,
@@ -92,6 +116,7 @@ module.exports = {
             slug: doc.slug,
             entity: doc.entity,
             locale: doc.locale,
+            oldPublishedAt,
             industries: doc.industries?.map((name) => ({ name })) || [],
           };
         }),

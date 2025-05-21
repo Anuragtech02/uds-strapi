@@ -24,8 +24,10 @@ const initializeTypesense = async () => {
           { name: "entity", type: "string", facet: true },
           { name: "locale", type: "string", facet: true },
           { name: "industries", type: "string[]", facet: true, optional: true },
+          { name: "oldPublishedAt", type: "int64", sort: true, optional: true }, // Added sortable timestamp field
+          { name: "createdAt", type: "int64", sort: true, optional: true }, // Added as fallback
         ],
-        default_sorting_field: "id",
+        default_sorting_field: "oldPublishedAt", // Changed to use oldPublishedAt for default sorting
       });
       console.log("Created Typesense collection");
     } else {
@@ -35,6 +37,17 @@ const initializeTypesense = async () => {
 };
 
 const formatDocument = (item, entityType) => {
+  // Convert date strings to timestamps for Typesense
+  const oldPublishedAtTimestamp = item.oldPublishedAt
+    ? new Date(item.oldPublishedAt).getTime()
+    : item.publishedAt
+    ? new Date(item.publishedAt).getTime()
+    : null;
+
+  const createdAtTimestamp = item.createdAt
+    ? new Date(item.createdAt).getTime()
+    : new Date().getTime();
+
   // Format document for Typesense based on entity type
   const doc = {
     id: item.id,
@@ -43,6 +56,8 @@ const formatDocument = (item, entityType) => {
     slug: item.slug || "",
     entity: entityType,
     locale: item.locale || "en",
+    oldPublishedAt: oldPublishedAtTimestamp,
+    createdAt: createdAtTimestamp,
   };
 
   // Add industries if available
@@ -57,59 +72,93 @@ const syncAllContent = async () => {
   const typesense = getClient();
 
   try {
-    // Get content from Strapi
-    console.log("Starting full content sync to Typesense...");
-
-    // Get reports
-    const reports = await strapi.db.query("api::report.report").findMany({
-      populate: ["industries"],
-    });
-
-    // Get blogs
-    const blogs = await strapi.db.query("api::blog.blog").findMany({
-      populate: ["industries"],
-    });
-
-    // Get news articles
-    const newsArticles = await strapi.db
-      .query("api::news-article.news-article")
-      .findMany({
-        populate: ["industries"],
-      });
-
-    // Format documents for Typesense
-    const documents = [
-      ...reports.map((item) => formatDocument(item, "api::report.report")),
-      ...blogs.map((item) => formatDocument(item, "api::blog.blog")),
-      ...newsArticles.map((item) =>
-        formatDocument(item, "api::news-article.news-article")
-      ),
-    ];
-
-    // Delete existing collection and recreate
-    try {
-      await typesense.collections(COLLECTION_NAME).delete();
-      console.log("Deleted existing Typesense collection");
-    } catch (error) {
-      // Collection might not exist yet
-    }
-
-    // Create collection
+    // Initialize Typesense collection
     await initializeTypesense();
 
-    // Import documents in batches
-    const BATCH_SIZE = 100;
-    for (let i = 0; i < documents.length; i += BATCH_SIZE) {
-      const batch = documents.slice(i, i + BATCH_SIZE);
-      await typesense.collections(COLLECTION_NAME).documents().import(batch);
-      console.log(
-        `Indexed batch ${i / BATCH_SIZE + 1} (${batch.length} documents)`
-      );
+    // Define content types to process
+    const contentTypes = [
+      { model: "api::report.report", entity: "api::report.report" },
+      { model: "api::blog.blog", entity: "api::blog.blog" },
+      {
+        model: "api::news-article.news-article",
+        entity: "api::news-article.news-article",
+      },
+    ];
+
+    let totalProcessed = 0;
+
+    // Process each content type separately to avoid loading everything into memory
+    for (const { model, entity } of contentTypes) {
+      console.log(`Starting to process ${model}...`);
+
+      // Get total count
+      const totalCount = await strapi.db.query(model).count();
+      console.log(`Total ${model} items: ${totalCount}`);
+
+      // Process in small batches to avoid memory issues
+      const BATCH_SIZE = 100;
+      const LOCALE_BATCH_SIZE = 2; // Process 2 locales at a time to reduce memory pressure
+
+      // Get available locales
+      const locales = await strapi.plugin("i18n").service("locales").find();
+      const localesCodes = locales.map((locale) => locale.code);
+
+      // Process each locale batch
+      for (
+        let localeIndex = 0;
+        localeIndex < localesCodes.length;
+        localeIndex += LOCALE_BATCH_SIZE
+      ) {
+        const currentLocales = localesCodes.slice(
+          localeIndex,
+          localeIndex + LOCALE_BATCH_SIZE
+        );
+        console.log(`Processing locales: ${currentLocales.join(", ")}`);
+
+        // Process in paginated batches
+        for (let offset = 0; offset < totalCount; offset += BATCH_SIZE) {
+          // Query only the current batch with specific locales
+          const items = await strapi.db.query(model).findMany({
+            populate: ["industries"],
+            filters: {
+              locale: {
+                $in: currentLocales,
+              },
+            },
+            limit: BATCH_SIZE,
+            offset,
+          });
+
+          if (items.length === 0) continue;
+
+          console.log(
+            `Processing batch of ${items.length} ${model} items, offset ${offset}`
+          );
+
+          // Format and prepare documents
+          const documents = items.map((item) => formatDocument(item, entity));
+
+          // Index documents
+          await typesense
+            .collections(COLLECTION_NAME)
+            .documents()
+            .import(documents, { action: "upsert" });
+
+          totalProcessed += items.length;
+
+          // Force garbage collection to free memory if available
+          if (global.gc) {
+            console.log("Running garbage collection");
+            global.gc();
+          }
+
+          // Short delay to allow other operations
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      }
     }
 
-    console.log(
-      `Successfully synced ${documents.length} documents to Typesense`
-    );
+    console.log(`Successfully synced ${totalProcessed} documents to Typesense`);
   } catch (error) {
     console.error("Error syncing content to Typesense:", error);
   }

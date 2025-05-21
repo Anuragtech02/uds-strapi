@@ -6,12 +6,14 @@ let typesenseClient = null;
 
 const getClient = () => {
   if (typesenseClient) return typesenseClient;
+  const HOST = process.env.TYPESENSE_HOST || "localhost";
+  const PORT = process.env.TYPESENSE_PORT || "8108";
 
   typesenseClient = new Typesense.Client({
     nodes: [
       {
-        host: "typesense", // Docker service name
-        port: "8108",
+        host: HOST, // Docker service name
+        port: PORT,
         protocol: "http",
       },
     ],
