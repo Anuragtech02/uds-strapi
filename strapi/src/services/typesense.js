@@ -4,25 +4,62 @@ const Typesense = require("typesense");
 
 let typesenseClient = null;
 
-const getClient = () => {
-  if (typesenseClient) return typesenseClient;
-  const HOST = process.env.TYPESENSE_HOST || "localhost";
-  const PORT = process.env.TYPESENSE_PORT || "8108";
+const typesense = new Typesense.Client({
+  nodes: [
+    {
+      host: "your-typesense-domain.com",
+      port: "443",
+      protocol: "https",
+      path: "", // Add this line - sometimes path prefixes are needed
+    },
+  ],
+  apiKey: "your-api-key",
+  connectionTimeoutSeconds: 10, // Increase timeout
+  logger: {
+    error: (message) => {
+      console.error(`[Typesense Error]: ${message}`);
+    },
+  },
+  retryIntervalSeconds: 2, // Add retry logic
+});
 
-  typesenseClient = new Typesense.Client({
-    nodes: [
-      {
-        host: HOST, // Docker service name
-        port: 443,
-        protocol: "https",
+// Add this debug function
+const testTypesenseConnection = async () => {
+  try {
+    // Test a simple API call
+    const health = await fetch("https://your-typesense-domain.com/health", {
+      headers: {
+        "X-TYPESENSE-API-KEY": "your-api-key",
       },
-    ],
-    apiKey: process.env.TYPESENSE_API_KEY || "some-strong-api-key",
-    connectionTimeoutSeconds: 2,
-  });
+    });
+    console.log("Health check status:", health.status);
+    console.log("Health check body:", await health.text());
 
-  return typesenseClient;
+    // Try to list collections directly
+    const collections = await fetch(
+      "https://your-typesense-domain.com/collections",
+      {
+        headers: {
+          "X-TYPESENSE-API-KEY": "your-api-key",
+        },
+      }
+    );
+    console.log("Collections status:", collections.status);
+    console.log("Collections body:", await collections.text());
+  } catch (error) {
+    console.error("Connection test failed:", error);
+  }
 };
+
+// Run the test
+testTypesenseConnection();
+
+function getClient() {
+  if (!typesenseClient) {
+    typesenseClient = typesense;
+  }
+  return typesenseClient;
+}
 
 module.exports = {
   getClient,
