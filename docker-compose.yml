@@ -1,4 +1,4 @@
-version: "3.8" # Specify a version, 3.8 is a good modern choice
+version: "3.8"
 
 services:
   traefik:
@@ -41,13 +41,13 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25" # Adjusted
+          cpus: '0.20'
           memory: 256M
         reservations:
-          cpus: "0.10"
-          memory: 128M
+          cpus: '0.05'
+          memory: 96M
 
-  strapi1:
+  strapi:
     build:
       context: ./strapi # Ensure ./strapi directory exists with your Dockerfile and app code
       dockerfile: Dockerfile
@@ -55,7 +55,7 @@ services:
     env_file: ./strapi/.env # Ensure ./strapi/.env file exists
     environment:
       NODE_ENV: production
-      NODE_OPTIONS: "--max-old-space-size=600" # Added for Node.js heap management
+      NODE_OPTIONS: "--max-old-space-size=1024"
     volumes:
       - ./strapi/config:/opt/app/config
       - ./strapi/src:/opt/app/src
@@ -83,62 +83,15 @@ services:
     depends_on:
       - traefik # Optional, but good for startup order if Traefik needs to be ready
       - redis
-      - meilisearch
+      - typesense
     deploy:
       resources:
         limits:
-          cpus: "0.50" # Adjusted
-          memory: 768M # Adjusted
+          cpus: '0.80'
+          memory: 1536M
         reservations:
-          cpus: "0.15" # Adjusted
-          memory: 384M # Adjusted
-
-  strapi2:
-    build:
-      context: ./strapi # Ensure ./strapi directory exists with your Dockerfile and app code
-      dockerfile: Dockerfile
-    env_file: ./strapi/.env # Ensure ./strapi/.env file exists
-    environment:
-      NODE_ENV: production
-      NODE_OPTIONS: "--max-old-space-size=600" # Added for Node.js heap management
-    volumes:
-      - ./strapi/config:/opt/app/config
-      - ./strapi/src:/opt/app/src
-      - ./strapi/package.json:/opt/app/package.json
-      - ./strapi/yarn.lock:/opt/app/yarn.lock # or package-lock.json if using npm
-      - strapi2_data:/opt/app/public/uploads
-      - ./ssl:/opt/app/ssl:ro # Optional
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=uds-strapi_app-network" # Ensure this matches your network name
-      # Note: strapi2 also uses the 'strapi-backend' service. Traefik will load balance.
-      - "traefik.http.services.strapi-backend.loadbalancer.server.port=1337"
-      - "traefik.http.routers.strapi2.rule=Host(`${DOMAIN_NAME}`)" # This rule is the same for strapi1 and strapi2
-      - "traefik.http.routers.strapi2.entrypoints=websecure"
-      - "traefik.http.routers.strapi2.service=strapi-backend"
-      - "traefik.http.routers.strapi2.tls=true"
-      - "traefik.http.routers.strapi2.tls.certresolver=letsencrypt"
-      # Add HTTP router for ACME challenge
-      - "traefik.http.routers.strapi2-http.rule=Host(`${DOMAIN_NAME}`)"
-      - "traefik.http.routers.strapi2-http.entrypoints=web"
-      - "traefik.http.routers.strapi2-http.service=strapi-backend"
-      - "traefik.http.middlewares.cloudflare-proto.headers.customrequestheaders.X-Forwarded-Proto=https" # Re-declared, could be defined once and referenced
-      - "traefik.http.routers.strapi2.middlewares=cloudflare-proto"
-    networks:
-      - app-network
-    depends_on:
-      - traefik # Optional
-      - redis
-      - meilisearch
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "0.50" # Adjusted
-          memory: 768M # Adjusted
-        reservations:
-          cpus: "0.15" # Adjusted
-          memory: 384M # Adjusted
+          cpus: '0.30'
+          memory: 768M
 
   redis:
     image: redis:7-alpine
@@ -151,37 +104,40 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.20"
+          cpus: '0.15'
           memory: 256M
         reservations:
-          cpus: "0.05"
-          memory: 128M
+          cpus: '0.05'
+          memory: 96M
+
 
   typesense:
-    image: typesense/typesense:0.25.1
-    environment:
-      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY:-some-strong-api-key}
-      - TYPESENSE_DATA_DIR=/data
-      - TYPESENSE_ENABLE_CORS=true
-    volumes:
-      - typesense_data:/data
-    networks:
-      - app-network
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.typesense.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/typesense`)"
-      - "traefik.http.middlewares.strip-typesense-prefix.stripprefix.prefixes=/typesense"
-      - "traefik.http.routers.typesense.middlewares=strip-typesense-prefix"
-      - "traefik.http.services.typesense.loadbalancer.server.port=8108"
-    deploy:
-      resources:
-        limits:
-          cpus: "0.40"
-          memory: 512M
-        reservations:
-          cpus: "0.10"
-          memory: 256M
+      image: typesense/typesense:0.25.1
+      environment:
+        - TYPESENSE_API_KEY=${TYPESENSE_API_KEY:-some-strong-api-key}
+        - TYPESENSE_DATA_DIR=/data
+        - TYPESENSE_ENABLE_CORS=true
+        # Add memory limits for Typesense
+        - TYPESENSE_MEMORY_LIMIT_MIB=1024
+      volumes:
+        - typesense_data:/data
+      networks:
+        - app-network
+      restart: unless-stopped
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.typesense.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/typesense`)"
+        - "traefik.http.middlewares.strip-typesense-prefix.stripprefix.prefixes=/typesense"
+        - "traefik.http.routers.typesense.middlewares=strip-typesense-prefix"
+        - "traefik.http.services.typesense.loadbalancer.server.port=8108"
+      deploy:
+        resources:
+          limits:
+            cpus: '0.60'
+            memory: 1024M
+          reservations:
+            cpus: '0.20'
+            memory: 512M
 
 networks:
   app-network:
