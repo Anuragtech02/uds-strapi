@@ -23,7 +23,7 @@ const initializeTypesense = async () => {
           { name: "entity", type: "string", facet: true },
           { name: "locale", type: "string", facet: true },
           { name: "industries", type: "string[]", facet: true, optional: true },
-          { name: "oldPublishedAt", type: "int64", sort: true, optional: true },
+          { name: "oldPublishedAt", type: "int64", sort: true },
           { name: "createdAt", type: "int64", sort: true, optional: true },
         ],
         default_sorting_field: "oldPublishedAt",
