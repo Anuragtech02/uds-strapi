@@ -14,7 +14,7 @@ const getClient = () => {
       {
         host: HOST, // Docker service name
         port: PORT,
-        protocol: "http",
+        protocol: "https",
       },
     ],
     apiKey: process.env.TYPESENSE_API_KEY || "some-strong-api-key",
