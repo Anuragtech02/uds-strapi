@@ -65,7 +65,7 @@ const formatDocument = (item, entityType) => {
 
   // Format document for Typesense based on entity type
   const doc = {
-    id: item.id,
+    id: item.id.toString(),
     title: item.title || item.name || "",
     shortDescription: item.shortDescription || "",
     slug: item.slug || "",
