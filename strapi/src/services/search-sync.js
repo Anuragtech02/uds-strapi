@@ -8,31 +8,49 @@ const initializeTypesense = async () => {
   const typesense = getClient();
 
   try {
-    // Check if collection exists
-    await typesense.collections(COLLECTION_NAME).retrieve();
-    console.log("Typesense collection already exists");
-  } catch (error) {
-    if (error.httpStatus === 404) {
-      // Create collection
-      await typesense.collections().create({
-        name: COLLECTION_NAME,
-        fields: [
-          { name: "id", type: "int32" },
-          { name: "title", type: "string" },
-          { name: "shortDescription", type: "string", optional: true },
-          { name: "slug", type: "string" },
-          { name: "entity", type: "string", facet: true },
-          { name: "locale", type: "string", facet: true },
-          { name: "industries", type: "string[]", facet: true, optional: true },
-          { name: "oldPublishedAt", type: "int64", sort: true, optional: true }, // Added sortable timestamp field
-          { name: "createdAt", type: "int64", sort: true, optional: true }, // Added as fallback
-        ],
-        default_sorting_field: "oldPublishedAt", // Changed to use oldPublishedAt for default sorting
-      });
-      console.log("Created Typesense collection");
-    } else {
-      console.error("Error initializing Typesense:", error);
+    // Try to retrieve the collection
+    try {
+      await typesense.collections(COLLECTION_NAME).retrieve();
+      console.log("Typesense collection already exists");
+    } catch (error) {
+      // Only create if we get a 404 (collection doesn't exist)
+      if (error.httpStatus === 404) {
+        console.log("Creating Typesense collection...");
+        await typesense.collections().create({
+          name: COLLECTION_NAME,
+          fields: [
+            { name: "id", type: "int32" },
+            { name: "title", type: "string" },
+            { name: "shortDescription", type: "string", optional: true },
+            { name: "slug", type: "string" },
+            { name: "entity", type: "string", facet: true },
+            { name: "locale", type: "string", facet: true },
+            {
+              name: "industries",
+              type: "string[]",
+              facet: true,
+              optional: true,
+            },
+            {
+              name: "oldPublishedAt",
+              type: "int64",
+              sort: true,
+              optional: true,
+            },
+          ],
+          default_sorting_field: "oldPublishedAt",
+        });
+        console.log("Created Typesense collection");
+      } else {
+        // Re-throw if it's not a 404
+        throw error;
+      }
     }
+
+    return true;
+  } catch (error) {
+    console.error("Error initializing Typesense:", error);
+    return false;
   }
 };
 
