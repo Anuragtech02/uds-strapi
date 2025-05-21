@@ -44,46 +44,46 @@ module.exports = {
     }, 30000); // Wait 30 seconds after startup
 
     // Report lifecycle hooks
-    strapi.db.lifecycles.subscribe({
-      models: ["api::report.report"],
-      afterCreate: async ({ result }) => {
-        await syncSingleItem(result, "api::report.report");
-      },
-      afterUpdate: async ({ result }) => {
-        await syncSingleItem(result, "api::report.report");
-      },
-      afterDelete: async ({ result }) => {
-        await deleteSingleItem(result, "api::report.report");
-      },
-    });
+    // strapi.db.lifecycles.subscribe({
+    //   models: ["api::report.report"],
+    //   afterCreate: async ({ result }) => {
+    //     await syncSingleItem(result, "api::report.report");
+    //   },
+    //   afterUpdate: async ({ result }) => {
+    //     await syncSingleItem(result, "api::report.report");
+    //   },
+    //   afterDelete: async ({ result }) => {
+    //     await deleteSingleItem(result, "api::report.report");
+    //   },
+    // });
 
-    // Blog lifecycle hooks
-    strapi.db.lifecycles.subscribe({
-      models: ["api::blog.blog"],
-      afterCreate: async ({ result }) => {
-        await syncSingleItem(result, "api::blog.blog");
-      },
-      afterUpdate: async ({ result }) => {
-        await syncSingleItem(result, "api::blog.blog");
-      },
-      afterDelete: async ({ result }) => {
-        await deleteSingleItem(result, "api::blog.blog");
-      },
-    });
+    // // Blog lifecycle hooks
+    // strapi.db.lifecycles.subscribe({
+    //   models: ["api::blog.blog"],
+    //   afterCreate: async ({ result }) => {
+    //     await syncSingleItem(result, "api::blog.blog");
+    //   },
+    //   afterUpdate: async ({ result }) => {
+    //     await syncSingleItem(result, "api::blog.blog");
+    //   },
+    //   afterDelete: async ({ result }) => {
+    //     await deleteSingleItem(result, "api::blog.blog");
+    //   },
+    // });
 
-    // News Article lifecycle hooks
-    strapi.db.lifecycles.subscribe({
-      models: ["api::news-article.news-article"],
-      afterCreate: async ({ result }) => {
-        await syncSingleItem(result, "api::news-article.news-article");
-      },
-      afterUpdate: async ({ result }) => {
-        await syncSingleItem(result, "api::news-article.news-article");
-      },
-      afterDelete: async ({ result }) => {
-        await deleteSingleItem(result, "api::news-article.news-article");
-      },
-    });
+    // // News Article lifecycle hooks
+    // strapi.db.lifecycles.subscribe({
+    //   models: ["api::news-article.news-article"],
+    //   afterCreate: async ({ result }) => {
+    //     await syncSingleItem(result, "api::news-article.news-article");
+    //   },
+    //   afterUpdate: async ({ result }) => {
+    //     await syncSingleItem(result, "api::news-article.news-article");
+    //   },
+    //   afterDelete: async ({ result }) => {
+    //     await deleteSingleItem(result, "api::news-article.news-article");
+    //   },
+    // });
 
     // Add a scheduled task to ensure full sync daily
     if (strapi.cron) {
