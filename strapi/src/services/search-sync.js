@@ -16,7 +16,7 @@ const initializeTypesense = async () => {
       const createResult = await typesense.collections().create({
         name: COLLECTION_NAME, // "content"
         fields: [
-          { name: "id", type: "int32" },
+          { name: "id", type: "string" },
           { name: "title", type: "string" },
           { name: "shortDescription", type: "string", optional: true },
           { name: "slug", type: "string" },
