@@ -20,6 +20,7 @@ const typesense = new Typesense.Client({
   //       console.error(`[Typesense Error]: ${message}`);
   //     },
   //   },
+  logLevel: "debug",
   retryIntervalSeconds: 2, // Add retry logic
 });
 
