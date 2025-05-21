@@ -1,13 +1,15 @@
+version: "3.8" # Specify a version, 3.8 is a good modern choice
+
 services:
   traefik:
     image: traefik:v2.10
     command:
       - --log.level=DEBUG
-      - --api.insecure=false # Changed to false for security
-      - --api.dashboard=true # Explicitly enable dashboard
+      - --api.insecure=false
+      - --api.dashboard=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=uds-strapi_app-network
+      - --providers.docker.network=uds-strapi_app-network # Ensure this matches your network name
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
@@ -21,7 +23,7 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./letsencrypt:/letsencrypt
+      - ./letsencrypt:/letsencrypt # Ensure this path exists or Docker will create it as a directory
     networks:
       - app-network
     labels:
@@ -34,29 +36,38 @@ services:
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.dashboard.middlewares=auth-middleware"
       # Basic auth middleware
-      - "traefik.http.middlewares.auth-middleware.basicauth.users=admin:$apr1$rF0g0UUr$qk6l4LtB4q7L1W96qkB5W1"
+      - "traefik.http.middlewares.auth-middleware.basicauth.users=admin:$apr1$rF0g0UUr$qk6l4LtB4q7L1W96qkB5W1" # Change these credentials
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25" # Adjusted
+          memory: 256M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
 
   strapi1:
     build:
-      context: ./strapi
+      context: ./strapi # Ensure ./strapi directory exists with your Dockerfile and app code
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file: ./strapi/.env
+    env_file: ./strapi/.env # Ensure ./strapi/.env file exists
     environment:
       NODE_ENV: production
+      NODE_OPTIONS: "--max-old-space-size=600" # Added for Node.js heap management
     volumes:
       - ./strapi/config:/opt/app/config
       - ./strapi/src:/opt/app/src
       - ./strapi/package.json:/opt/app/package.json
-      - ./strapi/yarn.lock:/opt/app/yarn.lock
+      - ./strapi/yarn.lock:/opt/app/yarn.lock # or package-lock.json if using npm
       - strapi1_data:/opt/app/public/uploads
-      - ./ssl:/opt/app/ssl:ro
+      - ./ssl:/opt/app/ssl:ro # Optional: if you're managing SSL certs manually inside container
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=uds-strapi_app-network"
+      - "traefik.docker.network=uds-strapi_app-network" # Ensure this matches your network name
       - "traefik.http.services.strapi-backend.loadbalancer.server.port=1337"
-      - "traefik.http.routers.strapi1.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.strapi1.rule=Host(`${DOMAIN_NAME}`)" # This rule is the same for strapi1 and strapi2
       - "traefik.http.routers.strapi1.entrypoints=websecure"
       - "traefik.http.routers.strapi1.service=strapi-backend"
       - "traefik.http.routers.strapi1.tls=true"
@@ -70,29 +81,39 @@ services:
     networks:
       - app-network
     depends_on:
-      - traefik
+      - traefik # Optional, but good for startup order if Traefik needs to be ready
       - redis
       - meilisearch
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50" # Adjusted
+          memory: 768M # Adjusted
+        reservations:
+          cpus: "0.15" # Adjusted
+          memory: 384M # Adjusted
 
   strapi2:
     build:
-      context: ./strapi
+      context: ./strapi # Ensure ./strapi directory exists with your Dockerfile and app code
       dockerfile: Dockerfile
-    env_file: ./strapi/.env
+    env_file: ./strapi/.env # Ensure ./strapi/.env file exists
     environment:
       NODE_ENV: production
+      NODE_OPTIONS: "--max-old-space-size=600" # Added for Node.js heap management
     volumes:
       - ./strapi/config:/opt/app/config
       - ./strapi/src:/opt/app/src
       - ./strapi/package.json:/opt/app/package.json
-      - ./strapi/yarn.lock:/opt/app/yarn.lock
+      - ./strapi/yarn.lock:/opt/app/yarn.lock # or package-lock.json if using npm
       - strapi2_data:/opt/app/public/uploads
-      - ./ssl:/opt/app/ssl:ro
+      - ./ssl:/opt/app/ssl:ro # Optional
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=uds-strapi_app-network"
+      - "traefik.docker.network=uds-strapi_app-network" # Ensure this matches your network name
+      # Note: strapi2 also uses the 'strapi-backend' service. Traefik will load balance.
       - "traefik.http.services.strapi-backend.loadbalancer.server.port=1337"
-      - "traefik.http.routers.strapi2.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.strapi2.rule=Host(`${DOMAIN_NAME}`)" # This rule is the same for strapi1 and strapi2
       - "traefik.http.routers.strapi2.entrypoints=websecure"
       - "traefik.http.routers.strapi2.service=strapi-backend"
       - "traefik.http.routers.strapi2.tls=true"
@@ -101,42 +122,66 @@ services:
       - "traefik.http.routers.strapi2-http.rule=Host(`${DOMAIN_NAME}`)"
       - "traefik.http.routers.strapi2-http.entrypoints=web"
       - "traefik.http.routers.strapi2-http.service=strapi-backend"
-      - "traefik.http.middlewares.cloudflare-proto.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.cloudflare-proto.headers.customrequestheaders.X-Forwarded-Proto=https" # Re-declared, could be defined once and referenced
       - "traefik.http.routers.strapi2.middlewares=cloudflare-proto"
     networks:
       - app-network
     depends_on:
-      - traefik
+      - traefik # Optional
       - redis
       - meilisearch
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50" # Adjusted
+          memory: 768M # Adjusted
+        reservations:
+          cpus: "0.15" # Adjusted
+          memory: 384M # Adjusted
 
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD} # Ensure REDIS_PASSWORD is in your .env
     networks:
       - app-network
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.20"
+          memory: 256M
+        reservations:
+          cpus: "0.05"
+          memory: 128M
 
-  meilisearch:
-    image: getmeili/meilisearch:latest
+  typesense:
+    image: typesense/typesense:0.25.1
     environment:
-      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-STRAPI_UNIVDATOS_SEARCH}
-      - MEILI_NO_ANALYTICS=true
-      - MEILI_ENV=production
+      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY:-some-strong-api-key}
+      - TYPESENSE_DATA_DIR=/data
+      - TYPESENSE_ENABLE_CORS=true
     volumes:
-      - meilisearch_data:/meili_data
+      - typesense_data:/data
     networks:
       - app-network
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.meilisearch.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/meilisearch`)"
-      - "traefik.http.middlewares.strip-meilisearch-prefix.stripprefix.prefixes=/meilisearch"
-      - "traefik.http.routers.meilisearch.middlewares=strip-meilisearch-prefix"
-      - "traefik.http.services.meilisearch.loadbalancer.server.port=7700"
+      - "traefik.http.routers.typesense.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/typesense`)"
+      - "traefik.http.middlewares.strip-typesense-prefix.stripprefix.prefixes=/typesense"
+      - "traefik.http.routers.typesense.middlewares=strip-typesense-prefix"
+      - "traefik.http.services.typesense.loadbalancer.server.port=8108"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.40"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 256M
 
 networks:
   app-network:
@@ -148,5 +193,4 @@ volumes:
   strapi1_data:
   strapi2_data:
   redis_data:
-  meilisearch_data:
-
+  typesense_data:
