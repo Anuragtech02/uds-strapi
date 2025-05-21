@@ -15,11 +15,11 @@ const typesense = new Typesense.Client({
   ],
   apiKey: "your-api-key",
   connectionTimeoutSeconds: 10, // Increase timeout
-  logger: {
-    error: (message) => {
-      console.error(`[Typesense Error]: ${message}`);
-    },
-  },
+  //   logger: {
+  //     error: (message) => {
+  //       console.error(`[Typesense Error]: ${message}`);
+  //     },
+  //   },
   retryIntervalSeconds: 2, // Add retry logic
 });
 
