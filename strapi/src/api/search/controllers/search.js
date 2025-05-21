@@ -1,103 +1,115 @@
-const { MeiliSearch } = require("meilisearch");
+"use strict";
+
+const { syncAllContent } = require("../../../services/search-sync");
+const { getClient } = require("../../../services/typesense");
 
 module.exports = {
-  search: async (ctx) => {
-    const {
-      q,
-      page = 1,
-      limit = 10,
-      industries,
-      geographies,
-      sortBy = "relevance",
-    } = ctx.query;
+  // For manual admin syncing
+  async syncAll(ctx) {
+    if (ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
+      try {
+        await syncAllContent();
+        return { success: true, message: "Content sync started successfully" };
+      } catch (error) {
+        return ctx.badRequest("Failed to sync content: " + error.message);
+      }
+    } else {
+      return ctx.forbidden("Only admins can trigger a full sync");
+    }
+  },
 
-    const meilisearch = new MeiliSearch({
-      host: process.env.MEILISEARCH_HOST,
-      apiKey: process.env.MEILISEARCH_MASTER_KEY,
-    });
-
-    const indices = ["report", "blog", "news-article"];
-
+  // Search API for frontend
+  async search(ctx) {
     try {
-      // Parse filter arrays
-      const industryFilters = industries
-        ? industries.split(",").filter(Boolean)
-        : [];
-      const geographyFilters = geographies
-        ? geographies.split(",").filter(Boolean)
-        : [];
+      const { term, locale = "en", tab, page = 1, pageSize = 10 } = ctx.query;
 
-      // Prepare the queries for multiSearch
-      const queries = indices.map((indexUid) => {
-        let query = {
-          indexUid,
-          q: decodeURIComponent(q),
-          limit: parseInt(limit),
-          // matchingStrategy: "all",
-          rankingScoreThreshold: 0.3,
-          // showRankingScoreDetails: true,
-          offset: (parseInt(page) - 1) * parseInt(limit),
-        };
+      if (!term || term.length < 2) {
+        return ctx.badRequest("Search term must be at least 2 characters");
+      }
 
-        // Add filters for reports - using AND logic
-        if (indexUid === "report") {
-          const filters = [];
+      const typesense = getClient();
 
-          // Create AND condition for industries
-          if (industryFilters.length > 0) {
-            const industriesFilter = industryFilters
-              .map((slug) => `industries.slug = "${slug}"`)
-              .join(" AND ");
-            filters.push(`(${industriesFilter})`);
-          }
+      // Build filter based on query parameters
+      let filterBy = `locale:=${locale}`;
 
-          // Create AND condition for geographies
-          if (geographyFilters.length > 0) {
-            const geographiesFilter = geographyFilters
-              .map((slug) => `geographies.slug = "${slug}"`)
-              .join(" AND ");
-            filters.push(`(${geographiesFilter})`);
-          }
-
-          // Combine all filters with AND
-          if (filters.length > 0) {
-            query.filter = filters.join(" AND ");
-          }
-        }
-        if (sortBy && sortBy !== "relevance") {
-          const direction = sortBy.includes(":desc") ? "desc" : "asc";
-          query.sort = [
-            `oldPublishedAt:${direction}`,
-            `publishedAt:${direction}`,
-          ];
+      // If tab is specified, filter by entity type
+      if (tab) {
+        let entityType;
+        switch (tab.toLowerCase()) {
+          case "reports":
+            entityType = "api::report.report";
+            break;
+          case "blogs":
+            entityType = "api::blog.blog";
+            break;
+          case "news":
+            entityType = "api::news-article.news-article";
+            break;
         }
 
-        return query;
-      });
+        if (entityType) {
+          filterBy += ` && entity:=${entityType}`;
+        }
+      }
 
-      // Perform the multiSearch
-      const { results } = await meilisearch.multiSearch({ queries });
-
-      // Format the results
-      const formattedResults = results.reduce((acc, result, index) => {
-        acc[indices[index]] = result.hits;
-        return acc;
-      }, {});
-
-      ctx.body = {
-        query: q,
-        results: formattedResults,
-        totals: {
-          report: results[0].estimatedTotalHits,
-          blog: results[1].estimatedTotalHits,
-          "news-article": results[2].estimatedTotalHits,
-        },
-        page: parseInt(page),
-        limit: parseInt(limit),
+      // Search parameters
+      const searchParams = {
+        q: term,
+        query_by: "title,shortDescription",
+        filter_by: filterBy,
+        per_page: parseInt(pageSize, 10),
+        page: parseInt(page, 10),
+        preset: "multilingual", // Optimized for multilingual search
+        sort_by: "_text_match:desc",
       };
-    } catch (err) {
-      console.error("Search error:", err);
-      ctx.badRequest("Search error", { moreDetails: err.message });
+
+      // Execute search
+      const searchResults = await typesense
+        .collections("content")
+        .documents()
+        .search(searchParams);
+
+      // Count items by entity type
+      const counts = {
+        all: searchResults.found,
+        "api::report.report": 0,
+        "api::blog.blog": 0,
+        "api::news-article.news-article": 0,
+      };
+
+      // Format response to match your expected format
+      const formattedResults = {
+        data: searchResults.hits.map((hit) => {
+          const doc = hit.document;
+
+          // Update counts
+          counts[doc.entity] = (counts[doc.entity] || 0) + 1;
+
+          return {
+            id: doc.id,
+            title: doc.title,
+            shortDescription: doc.shortDescription,
+            slug: doc.slug,
+            entity: doc.entity,
+            locale: doc.locale,
+            industries: doc.industries?.map((name) => ({ name })) || [],
+          };
+        }),
+        meta: {
+          pagination: {
+            page: parseInt(page, 10),
+            pageSize: parseInt(pageSize, 10),
+            pageCount: Math.ceil(searchResults.found / parseInt(pageSize, 10)),
+            total: searchResults.found,
+            allCounts: counts,
+          },
+        },
+      };
+
+      return formattedResults;
+    } catch (error) {
+      console.error("Search error:", error);
+      return ctx.badRequest("Search failed: " + error.message);
     }
   },
 };

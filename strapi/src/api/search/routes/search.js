@@ -1,3 +1,5 @@
+"use strict";
+
 module.exports = {
   routes: [
     {
@@ -5,11 +7,16 @@ module.exports = {
       path: "/search",
       handler: "search.search",
       config: {
-        policies: [],
-        description: "Search content using Meilisearch",
-        tag: {
-          plugin: "search",
-          name: "Search",
+        auth: false,
+      },
+    },
+    {
+      method: "POST",
+      path: "/search/sync",
+      handler: "search.syncAll",
+      config: {
+        auth: {
+          scope: ["admin"],
         },
       },
     },
