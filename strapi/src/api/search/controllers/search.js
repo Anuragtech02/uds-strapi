@@ -22,7 +22,7 @@ module.exports = {
   async search(ctx) {
     try {
       const {
-        term,
+        q: term,
         locale = "en",
         tab,
         page = 1,
