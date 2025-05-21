@@ -13,7 +13,7 @@ const getClient = () => {
     nodes: [
       {
         host: HOST, // Docker service name
-        port: PORT,
+        port: 443,
         protocol: "https",
       },
     ],
