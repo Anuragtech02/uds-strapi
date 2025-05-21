@@ -7,47 +7,43 @@ const COLLECTION_NAME = "content";
 const initializeTypesense = async () => {
   const typesense = getClient();
 
+  console.log("Initializing Typesense and creating collection...");
+
   try {
-    // Try to retrieve the collection
+    // First, ALWAYS try to create the collection
     try {
-      await typesense.collections(COLLECTION_NAME).retrieve();
-      console.log("Typesense collection already exists");
-    } catch (error) {
-      // Only create if we get a 404 (collection doesn't exist)
-      if (error.httpStatus === 404) {
-        console.log("Creating Typesense collection...");
-        await typesense.collections().create({
-          name: COLLECTION_NAME,
-          fields: [
-            { name: "id", type: "int32" },
-            { name: "title", type: "string" },
-            { name: "shortDescription", type: "string", optional: true },
-            { name: "slug", type: "string" },
-            { name: "entity", type: "string", facet: true },
-            { name: "locale", type: "string", facet: true },
-            {
-              name: "industries",
-              type: "string[]",
-              facet: true,
-              optional: true,
-            },
-            {
-              name: "oldPublishedAt",
-              type: "int64",
-              sort: true,
-              optional: true,
-            },
-          ],
-          default_sorting_field: "oldPublishedAt",
-        });
-        console.log("Created Typesense collection");
+      console.log("Creating collection content...");
+      const createResult = await typesense.collections().create({
+        name: COLLECTION_NAME, // "content"
+        fields: [
+          { name: "id", type: "int32" },
+          { name: "title", type: "string" },
+          { name: "shortDescription", type: "string", optional: true },
+          { name: "slug", type: "string" },
+          { name: "entity", type: "string", facet: true },
+          { name: "locale", type: "string", facet: true },
+          { name: "industries", type: "string[]", facet: true, optional: true },
+          { name: "oldPublishedAt", type: "int64", sort: true, optional: true },
+          { name: "createdAt", type: "int64", sort: true, optional: true },
+        ],
+        default_sorting_field: "oldPublishedAt",
+      });
+      console.log("Collection created successfully:", createResult);
+      return true;
+    } catch (createError) {
+      // If collection already exists, we'll get a 409 Conflict error, which is fine
+      if (
+        createError.httpStatus === 409 ||
+        (createError.message && createError.message.includes("409"))
+      ) {
+        console.log("Collection already exists, continuing...");
+        return true;
       } else {
-        // Re-throw if it's not a 404
-        throw error;
+        // If it's another error, log and re-throw
+        console.error("Failed to create collection:", createError);
+        throw createError;
       }
     }
-
-    return true;
   } catch (error) {
     console.error("Error initializing Typesense:", error);
     return false;
@@ -93,8 +89,11 @@ const syncAllContent = async () => {
 
   try {
     // Initialize Typesense collection
-    await initializeTypesense();
-
+    const initSuccess = await initializeTypesense();
+    if (!initSuccess) {
+      console.error("Failed to initialize Typesense, aborting sync");
+      return;
+    }
     // Define content types to process
     const contentTypes = [
       { model: "api::report.report", entity: "api::report.report" },

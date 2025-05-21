@@ -41,7 +41,7 @@ module.exports = {
       } catch (error) {
         console.error("Failed to start background indexing:", error);
       }
-    }, 30000); // Wait 30 seconds after startup
+    }, 5000); // Wait 30 seconds after startup
 
     // Report lifecycle hooks
     // strapi.db.lifecycles.subscribe({
