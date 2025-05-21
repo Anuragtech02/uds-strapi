@@ -7,7 +7,7 @@ let typesenseClient = null;
 const typesense = new Typesense.Client({
   nodes: [
     {
-      host: "your-typesense-domain.com",
+      host: "typesense.inspectionapp.in",
       port: "443",
       protocol: "https",
       path: "", // Add this line - sometimes path prefixes are needed
@@ -27,7 +27,7 @@ const typesense = new Typesense.Client({
 const testTypesenseConnection = async () => {
   try {
     // Test a simple API call
-    const health = await fetch("https://your-typesense-domain.com/health", {
+    const health = await fetch("https://typesense.inspectionapp.in/health", {
       headers: {
         "X-TYPESENSE-API-KEY": "your-api-key",
       },
@@ -37,7 +37,7 @@ const testTypesenseConnection = async () => {
 
     // Try to list collections directly
     const collections = await fetch(
-      "https://your-typesense-domain.com/collections",
+      "https://typesense.inspectionapp.in/collections",
       {
         headers: {
           "X-TYPESENSE-API-KEY": "your-api-key",
