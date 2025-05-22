@@ -139,11 +139,35 @@ const syncAllContent = async () => {
       },
     ];
 
+    // First, let's check what content we actually have
+    console.log("\n=== CONTENT AUDIT ===");
+    for (const { model } of contentTypes) {
+      try {
+        const count = await strapi.db.query(model).count();
+        console.log(`${model}: ${count} items`);
+
+        if (count > 0) {
+          // Check locales breakdown
+          const locales = await strapi.plugin("i18n").service("locales").find();
+          for (const locale of locales) {
+            const localeCount = await strapi.db.query(model).count({
+              filters: { locale: locale.code },
+            });
+            if (localeCount > 0) {
+              console.log(`  - ${locale.code}: ${localeCount} items`);
+            }
+          }
+        }
+      } catch (error) {
+        console.log(`${model}: Error checking - ${error.message}`);
+      }
+    }
+
     let totalProcessed = 0;
 
     // Process each content type separately to avoid loading everything into memory
     for (const { model, entity, relations } of contentTypes) {
-      console.log(`Starting to process ${model}...`);
+      console.log(`\n=== Starting to process ${model} ===`);
 
       // Get total count
       const totalCount = await strapi.db.query(model).count();
@@ -292,10 +316,37 @@ const syncAllContent = async () => {
         }
       }
 
-      console.log(`Completed processing ${model}`);
+      console.log(`=== Completed processing ${model} ===\n`);
     }
 
+    console.log(`\n=== SYNC COMPLETE ===`);
     console.log(`Successfully synced ${totalProcessed} documents to Typesense`);
+    console.log(`Content breakdown:`);
+
+    // Get a breakdown of what was synced
+    try {
+      const typesense = getClient();
+      const stats = await typesense
+        .collections(COLLECTION_NAME)
+        .documents()
+        .search({
+          q: "*",
+          per_page: 0,
+          facet_by: "entity,locale",
+        });
+
+      console.log(`Total documents in Typesense: ${stats.found}`);
+      if (stats.facet_counts) {
+        stats.facet_counts.forEach((facet) => {
+          console.log(
+            `${facet.field_name}:`,
+            facet.counts.map((c) => `${c.value}: ${c.count}`).join(", ")
+          );
+        });
+      }
+    } catch (statsError) {
+      console.log("Could not fetch final stats:", statsError.message);
+    }
   } catch (error) {
     console.error("Error syncing content to Typesense:", error);
     throw error; // Re-throw to let caller know sync failed
