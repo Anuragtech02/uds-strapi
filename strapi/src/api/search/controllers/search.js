@@ -330,7 +330,7 @@ module.exports = {
             : null;
 
           return {
-            id: doc.id,
+            id: doc.originalId || doc.id, // Use originalId for frontend compatibility
             title: doc.title,
             shortDescription: doc.shortDescription,
             slug: doc.slug,
@@ -357,6 +357,136 @@ module.exports = {
     } catch (error) {
       console.error("Search error:", error);
       return ctx.badRequest("Search failed: " + error.message);
+    }
+  },
+
+  // Add this method to your search controller for database audit
+  async databaseAudit(ctx) {
+    try {
+      const results = {};
+
+      // Check each content type
+      const contentTypes = [
+        "api::report.report",
+        "api::blog.blog",
+        "api::news-article.news-article",
+      ];
+
+      for (const model of contentTypes) {
+        try {
+          console.log(`\n=== Auditing ${model} ===`);
+
+          // Total count
+          const totalCount = await strapi.db.query(model).count();
+          results[model] = {
+            total: totalCount,
+            byLocale: {},
+            sampleData: [],
+          };
+
+          console.log(`${model}: ${totalCount} total items`);
+
+          if (totalCount > 0) {
+            // Get locales breakdown
+            const locales = await strapi
+              .plugin("i18n")
+              .service("locales")
+              .find();
+
+            for (const locale of locales) {
+              const localeCount = await strapi.db.query(model).count({
+                filters: { locale: locale.code },
+              });
+
+              if (localeCount > 0) {
+                results[model].byLocale[locale.code] = localeCount;
+                console.log(`  ${locale.code}: ${localeCount} items`);
+              }
+            }
+
+            // Get sample data to see structure
+            const sampleItems = await strapi.db.query(model).findMany({
+              limit: 3,
+              populate: {
+                industry: { select: ["name"] },
+                industries: { select: ["name"] },
+                geographies: { select: ["name"] },
+                highlightImage: { select: ["url"] },
+              },
+            });
+
+            results[model].sampleData = sampleItems.map((item) => ({
+              id: item.id,
+              title: item.title,
+              locale: item.locale,
+              hasIndustry: !!item.industry,
+              hasIndustries: !!(item.industries && item.industries.length > 0),
+              industriesCount: item.industries ? item.industries.length : 0,
+              hasGeographies: !!(
+                item.geographies && item.geographies.length > 0
+              ),
+              hasHighlightImage: !!item.highlightImage,
+              publishedAt: item.publishedAt,
+              oldPublishedAt: item.oldPublishedAt,
+            }));
+
+            console.log(`Sample ${model} data:`, results[model].sampleData);
+          }
+        } catch (error) {
+          console.error(`Error auditing ${model}:`, error);
+          results[model] = { error: error.message };
+        }
+      }
+
+      // Also check if there are unpublished items
+      console.log("\n=== Checking publication status ===");
+      for (const model of contentTypes) {
+        try {
+          const publishedCount = await strapi.db.query(model).count({
+            filters: {
+              $or: [
+                { publishedAt: { $notNull: true } },
+                { published_at: { $notNull: true } },
+              ],
+            },
+          });
+
+          const unpublishedCount = await strapi.db.query(model).count({
+            filters: {
+              $and: [
+                { publishedAt: { $null: true } },
+                { published_at: { $null: true } },
+              ],
+            },
+          });
+
+          results[model] = {
+            ...results[model],
+            published: publishedCount,
+            unpublished: unpublishedCount,
+          };
+
+          console.log(
+            `${model}: ${publishedCount} published, ${unpublishedCount} unpublished`
+          );
+        } catch (error) {
+          console.log(
+            `Could not check publication status for ${model}: ${error.message}`
+          );
+        }
+      }
+
+      return {
+        timestamp: new Date().toISOString(),
+        summary: {
+          reports: results["api::report.report"],
+          blogs: results["api::blog.blog"],
+          news: results["api::news-article.news-article"],
+        },
+      };
+    } catch (error) {
+      console.error("Database audit error:", error);
+      return ctx.badRequest("Database audit failed: " + error.message);
     }
   },
 };

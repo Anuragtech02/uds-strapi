@@ -25,5 +25,10 @@ module.exports = {
       path: "/search/debug",
       handler: "search.debugSearch",
     },
+    {
+      method: "GET",
+      path: "/search/audit",
+      handler: "search.databaseAudit",
+    },
   ],
 };

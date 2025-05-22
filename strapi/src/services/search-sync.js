@@ -17,6 +17,7 @@ const initializeTypesense = async () => {
         name: COLLECTION_NAME, // "content"
         fields: [
           { name: "id", type: "string" },
+          { name: "originalId", type: "string" },
           { name: "title", type: "string" },
           { name: "shortDescription", type: "string", optional: true },
           { name: "slug", type: "string" },
@@ -70,8 +71,12 @@ const formatDocument = (item, entityType) => {
     : new Date().getTime();
 
   // Format document for Typesense based on entity type
+  // Create unique ID combining original ID with locale
+  const uniqueId = `${item.id}_${item.locale || "en"}`;
+
   const doc = {
-    id: item.id.toString(),
+    id: uniqueId, // Use unique ID to prevent locale conflicts
+    originalId: item.id.toString(), // Keep original ID for reference
     title: item.title || item.name || "",
     shortDescription: item.shortDescription || "",
     slug: item.slug || "",
