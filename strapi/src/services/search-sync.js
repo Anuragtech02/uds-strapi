@@ -64,10 +64,14 @@ const formatDocument = (item, entityType) => {
     ? new Date(item.oldPublishedAt).getTime()
     : item.publishedAt
     ? new Date(item.publishedAt).getTime()
+    : item.published_at // Some might use snake_case
+    ? new Date(item.published_at).getTime()
     : null;
 
   const createdAtTimestamp = item.createdAt
     ? new Date(item.createdAt).getTime()
+    : item.created_at
+    ? new Date(item.created_at).getTime()
     : new Date().getTime();
 
   // Format document for Typesense based on entity type
@@ -78,11 +82,15 @@ const formatDocument = (item, entityType) => {
     id: uniqueId, // Use unique ID to prevent locale conflicts
     originalId: item.id.toString(), // Keep original ID for reference
     title: item.title || item.name || "",
-    shortDescription: item.shortDescription || "",
+    shortDescription: item.shortDescription || item.short_description || "",
     slug: item.slug || "",
     entity: entityType,
     locale: item.locale || "en",
-    highlightImage: item.highlightImage?.url || item.highlightImage || "", // Handle both populated and direct URL
+    highlightImage:
+      item.highlightImage?.url ||
+      item.highlight_image?.url ||
+      item.highlightImage ||
+      "",
     oldPublishedAt: oldPublishedAtTimestamp,
     createdAt: createdAtTimestamp,
   };
@@ -126,6 +134,20 @@ const formatDocument = (item, entityType) => {
   } else {
     // For content types without geographies, set empty array
     doc.geographies = [];
+  }
+
+  // Debug logging for blogs
+  if (entityType === "api::blog.blog") {
+    console.log(`🔍 Formatting blog ${item.id}:`, {
+      originalTitle: item.title,
+      locale: item.locale,
+      industriesRaw: item.industries,
+      industriesFormatted: doc.industries,
+      hasHighlightImage: !!doc.highlightImage,
+      oldPublishedAt: oldPublishedAtTimestamp
+        ? new Date(oldPublishedAtTimestamp).toISOString()
+        : null,
+    });
   }
 
   return doc;
@@ -244,17 +266,39 @@ const syncAllContent = async () => {
 
           // Format and prepare documents
           const documents = [];
-          items.forEach((item) => {
+          const errors = [];
+
+          items.forEach((item, index) => {
             try {
               const doc = formatDocument(item, entity);
               documents.push(doc);
+
+              // Extra logging for blogs
+              if (entity === "api::blog.blog" && index < 3) {
+                console.log(`📝 Formatted blog ${index + 1}:`, {
+                  id: doc.id,
+                  originalId: doc.originalId,
+                  title: doc.title.substring(0, 50) + "...",
+                  locale: doc.locale,
+                  industries: doc.industries,
+                  hasHighlightImage: !!doc.highlightImage,
+                });
+              }
             } catch (formatError) {
               console.error(
-                `Error formatting document ${item.id}:`,
+                `❌ Error formatting document ${item.id}:`,
                 formatError
               );
+              errors.push({ id: item.id, error: formatError.message });
             }
           });
+
+          if (errors.length > 0) {
+            console.log(
+              `⚠️ Formatting errors for ${model}:`,
+              errors.slice(0, 5)
+            ); // Show first 5 errors
+          }
 
           if (documents.length === 0) {
             console.log(
