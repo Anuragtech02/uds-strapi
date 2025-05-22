@@ -30,5 +30,15 @@ module.exports = {
       path: "/search/audit",
       handler: "search.databaseAudit",
     },
+    {
+      method: "DELETE",
+      path: "/search/cleanup",
+      handler: "search.cleanupCollection",
+    },
+    {
+      method: "GET",
+      path: "/search/test-blogs",
+      handler: "search.testBlogSearch",
+    },
   ],
 };

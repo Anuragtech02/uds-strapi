@@ -18,6 +18,9 @@ module.exports = {
   },
 
   // Debug endpoint to troubleshoot search issues
+  // Add this debug endpoint to your search controller temporarily
+  // This will help us see what's actually in your Typesense collection
+
   async debugSearch(ctx) {
     try {
       const { locale = "en", q = "india" } = ctx.query;
@@ -39,7 +42,89 @@ module.exports = {
 
       console.log("Entity facet counts:", allEntitiesSearch.facet_counts);
 
-      // Test the actual search with different variations
+      // Get more detailed blog analysis
+      const blogAnalysis = {};
+
+      // Check total blogs by locale
+      try {
+        const allBlogSearch = await typesense
+          .collections("content")
+          .documents()
+          .search({
+            q: "*",
+            query_by: "title",
+            filter_by: `entity:=api::blog.blog`,
+            per_page: 0,
+            facet_by: "locale",
+          });
+
+        blogAnalysis.totalBlogs = allBlogSearch.found;
+        blogAnalysis.blogsByLocale =
+          allBlogSearch.facet_counts?.[0]?.counts || [];
+      } catch (error) {
+        blogAnalysis.totalBlogsError = error.message;
+      }
+
+      // Check blogs in current locale with different search terms
+      const blogSearchTests = [
+        {
+          name: "All blogs (en)",
+          filter: `locale:=${locale} && entity:=api::blog.blog`,
+          q: "*",
+        },
+        {
+          name: "Blogs with 'india'",
+          filter: `locale:=${locale} && entity:=api::blog.blog`,
+          q: q,
+        },
+        {
+          name: "Blogs with 'saudi'",
+          filter: `locale:=${locale} && entity:=api::blog.blog`,
+          q: "saudi",
+        },
+        {
+          name: "Blogs with 'market'",
+          filter: `locale:=${locale} && entity:=api::blog.blog`,
+          q: "market",
+        },
+        {
+          name: "All blogs (no locale filter)",
+          filter: `entity:=api::blog.blog`,
+          q: "*",
+        },
+      ];
+
+      blogAnalysis.searchTests = {};
+
+      for (const test of blogSearchTests) {
+        try {
+          const result = await typesense
+            .collections("content")
+            .documents()
+            .search({
+              q: test.q,
+              query_by: "title,shortDescription",
+              filter_by: test.filter,
+              per_page: 10,
+            });
+
+          blogAnalysis.searchTests[test.name] = {
+            found: result.found,
+            returned: result.hits.length,
+            samples: result.hits.slice(0, 3).map((hit) => ({
+              id: hit.document.id,
+              originalId: hit.document.originalId,
+              title: hit.document.title?.substring(0, 60) + "...",
+              locale: hit.document.locale,
+              industries: hit.document.industries || [],
+            })),
+          };
+        } catch (error) {
+          blogAnalysis.searchTests[test.name] = { error: error.message };
+        }
+      }
+
+      // Test the main search variations
       const searchVariations = [
         {
           name: "Exact search (India)",
@@ -59,31 +144,12 @@ module.exports = {
             per_page: 50,
           },
         },
-        {
-          name: "Prefix search (india*)",
-          params: {
-            q: `${q}*`,
-            query_by: "title,shortDescription",
-            filter_by: `locale:=${locale}`,
-            per_page: 50,
-          },
-        },
-        {
-          name: "Case insensitive (INDIA)",
-          params: {
-            q: q.toUpperCase(),
-            query_by: "title,shortDescription",
-            filter_by: `locale:=${locale}`,
-            per_page: 50,
-          },
-        },
       ];
 
       const results = {};
 
       for (const variation of searchVariations) {
         try {
-          console.log(`Testing: ${variation.name}`);
           const searchResult = await typesense
             .collections("content")
             .documents()
@@ -92,45 +158,25 @@ module.exports = {
           results[variation.name] = {
             found: searchResult.found,
             returned: searchResult.hits.length,
+            entityBreakdown: {},
             samples: searchResult.hits.slice(0, 3).map((hit) => ({
               id: hit.document.id,
+              originalId: hit.document.originalId,
               title: hit.document.title,
               entity: hit.document.entity,
               score: hit.text_match_info?.score || 0,
             })),
           };
 
-          console.log(
-            `${variation.name}: Found ${searchResult.found}, returned ${searchResult.hits.length}`
-          );
+          // Count by entity
+          searchResult.hits.forEach((hit) => {
+            const entity = hit.document.entity;
+            results[variation.name].entityBreakdown[entity] =
+              (results[variation.name].entityBreakdown[entity] || 0) + 1;
+          });
         } catch (error) {
           results[variation.name] = { error: error.message };
-          console.error(`Error with ${variation.name}:`, error.message);
         }
-      }
-
-      // Also check entity counts for blogs specifically
-      try {
-        const blogSearch = await typesense
-          .collections("content")
-          .documents()
-          .search({
-            q: "*",
-            query_by: "title",
-            filter_by: `locale:=${locale} && entity:=api::blog.blog`,
-            per_page: 10,
-          });
-
-        results.blogCheck = {
-          found: blogSearch.found,
-          samples: blogSearch.hits.slice(0, 5).map((hit) => ({
-            id: hit.document.id,
-            title: hit.document.title,
-            entity: hit.document.entity,
-          })),
-        };
-      } catch (error) {
-        results.blogCheck = { error: error.message };
       }
 
       return {
@@ -138,6 +184,7 @@ module.exports = {
         query: q,
         totalDocuments: allEntitiesSearch.found,
         entityCounts: allEntitiesSearch.facet_counts?.[0]?.counts || [],
+        blogAnalysis: blogAnalysis,
         searchVariations: results,
       };
     } catch (error) {
@@ -487,6 +534,157 @@ module.exports = {
     } catch (error) {
       console.error("Database audit error:", error);
       return ctx.badRequest("Database audit failed: " + error.message);
+    }
+  },
+
+  // Add this method to your search controller for cleanup
+  async cleanupCollection(ctx) {
+    if (!ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
+      return ctx.forbidden("Only admins can cleanup collection");
+    }
+
+    try {
+      const { getClient } = require("../../../services/typesense");
+      const typesense = getClient();
+
+      console.log("🗑️ Deleting existing collection...");
+
+      try {
+        await typesense.collections("content").delete();
+        console.log("✅ Collection deleted successfully");
+      } catch (deleteError) {
+        if (deleteError.httpStatus === 404) {
+          console.log("ℹ️ Collection doesn't exist, proceeding...");
+        } else {
+          throw deleteError;
+        }
+      }
+
+      // Wait a moment for cleanup
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      return {
+        success: true,
+        message: "Collection deleted successfully. You can now run sync again.",
+      };
+    } catch (error) {
+      console.error("Error cleaning up collection:", error);
+      return ctx.badRequest("Cleanup failed: " + error.message);
+    }
+  },
+  // Add this method to test blog searches specifically
+  async testBlogSearch(ctx) {
+    try {
+      const { locale = "en", q = "*" } = ctx.query;
+      const typesense = getClient();
+
+      console.log(`Testing blog search for query: "${q}" in locale: ${locale}`);
+
+      // Test 1: Get all blogs
+      const allBlogsTest = await typesense
+        .collections("content")
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: `entity:=api::blog.blog`,
+          per_page: 20,
+          facet_by: "locale",
+        });
+
+      // Test 2: Get blogs in specific locale
+      const localeBlogsTest = await typesense
+        .collections("content")
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: `locale:=${locale} && entity:=api::blog.blog`,
+          per_page: 20,
+        });
+
+      // Test 3: Search blogs with query
+      const searchBlogsTest = await typesense
+        .collections("content")
+        .documents()
+        .search({
+          q: q === "*" ? "*" : q,
+          query_by: "title,shortDescription",
+          filter_by: `locale:=${locale} && entity:=api::blog.blog`,
+          per_page: 20,
+        });
+
+      // Test 4: Use the same parameters as main search
+      const mainSearchTest = await typesense
+        .collections("content")
+        .documents()
+        .search({
+          q: q === "*" ? "*" : q,
+          query_by: "title,shortDescription",
+          filter_by: `locale:=${locale}`,
+          per_page: 50,
+          sort_by: "oldPublishedAt:desc",
+        });
+
+      // Count blogs in main search
+      let blogsInMainSearch = 0;
+      const blogSamples = [];
+      mainSearchTest.hits.forEach((hit) => {
+        if (hit.document.entity === "api::blog.blog") {
+          blogsInMainSearch++;
+          if (blogSamples.length < 3) {
+            blogSamples.push({
+              id: hit.document.id,
+              originalId: hit.document.originalId,
+              title: hit.document.title,
+              industries: hit.document.industries,
+            });
+          }
+        }
+      });
+
+      return {
+        locale,
+        query: q,
+        tests: {
+          allBlogs: {
+            found: allBlogsTest.found,
+            localeBreakdown: allBlogsTest.facet_counts?.[0]?.counts || [],
+            samples: allBlogsTest.hits.slice(0, 3).map((hit) => ({
+              id: hit.document.id,
+              originalId: hit.document.originalId,
+              title: hit.document.title,
+              locale: hit.document.locale,
+            })),
+          },
+          blogsInLocale: {
+            found: localeBlogsTest.found,
+            samples: localeBlogsTest.hits.slice(0, 3).map((hit) => ({
+              id: hit.document.id,
+              originalId: hit.document.originalId,
+              title: hit.document.title,
+              locale: hit.document.locale,
+            })),
+          },
+          blogSearch: {
+            found: searchBlogsTest.found,
+            samples: searchBlogsTest.hits.slice(0, 3).map((hit) => ({
+              id: hit.document.id,
+              originalId: hit.document.originalId,
+              title: hit.document.title,
+              locale: hit.document.locale,
+            })),
+          },
+          mainSearch: {
+            totalFound: mainSearchTest.found,
+            blogsFound: blogsInMainSearch,
+            blogSamples: blogSamples,
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Blog search test error:", error);
+      return ctx.badRequest("Blog search test failed: " + error.message);
     }
   },
 };
