@@ -29,6 +29,7 @@ const initializeTypesense = async () => {
             facet: true,
             optional: true,
           },
+          { name: "highlightImage", type: "string", optional: true },
           { name: "oldPublishedAt", type: "int64", sort: true },
           { name: "createdAt", type: "int64", sort: true, optional: true },
         ],
@@ -76,19 +77,36 @@ const formatDocument = (item, entityType) => {
     slug: item.slug || "",
     entity: entityType,
     locale: item.locale || "en",
+    highlightImage: item.highlightImage?.url || item.highlightImage || "", // Handle both populated and direct URL
     oldPublishedAt: oldPublishedAtTimestamp,
     createdAt: createdAtTimestamp,
   };
 
-  // Add industries if available
-  if (item.industries && Array.isArray(item.industries)) {
-    doc.industries = item.industries
-      .map((industry) =>
-        typeof industry === "string"
-          ? industry
-          : industry.name || industry.title || ""
-      )
-      .filter(Boolean);
+  // Handle industries based on entity type
+  if (entityType === "api::report.report") {
+    // Reports have single industry relation
+    if (item.industry) {
+      const industryName =
+        typeof item.industry === "string"
+          ? item.industry
+          : item.industry.name || item.industry.title || "";
+      doc.industries = industryName ? [industryName] : [];
+    } else {
+      doc.industries = [];
+    }
+  } else {
+    // Blogs and news have multiple industries
+    if (item.industries && Array.isArray(item.industries)) {
+      doc.industries = item.industries
+        .map((industry) =>
+          typeof industry === "string"
+            ? industry
+            : industry.name || industry.title || ""
+        )
+        .filter(Boolean);
+    } else {
+      doc.industries = [];
+    }
   }
 
   // Add geographies if available (only for reports)
@@ -124,17 +142,17 @@ const syncAllContent = async () => {
       {
         model: "api::report.report",
         entity: "api::report.report",
-        relations: ["industries", "geographies"],
+        relations: ["industry", "geographies", "highlightImage"], // Reports have single industry
       },
       {
         model: "api::blog.blog",
         entity: "api::blog.blog",
-        relations: ["industries"],
+        relations: ["industries", "highlightImage"], // Blogs have multiple industries
       },
       {
         model: "api::news-article.news-article",
         entity: "api::news-article.news-article",
-        relations: ["industries"],
+        relations: ["industries", "highlightImage"], // News have multiple industries
       },
     ];
 
@@ -182,9 +200,15 @@ const syncAllContent = async () => {
       // Build populate object
       const populateObj = {};
       relations.forEach((relation) => {
-        populateObj[relation] = {
-          select: ["name"],
-        };
+        if (relation === "highlightImage") {
+          populateObj[relation] = {
+            select: ["url", "alternativeText"],
+          };
+        } else {
+          populateObj[relation] = {
+            select: ["name"],
+          };
+        }
       });
 
       let processedCount = 0;
@@ -381,12 +405,12 @@ const deleteSingleItem = async (item, entityType) => {
 const getEntityRelations = (entityType) => {
   switch (entityType) {
     case "api::report.report":
-      return ["industries", "geographies"];
+      return ["industry", "geographies", "highlightImage"]; // Single industry for reports
     case "api::blog.blog":
     case "api::news-article.news-article":
-      return ["industries"];
+      return ["industries", "highlightImage"]; // Multiple industries for blogs/news
     default:
-      return ["industries"]; // Default fallback
+      return ["industries", "highlightImage"]; // Default fallback
   }
 };
 

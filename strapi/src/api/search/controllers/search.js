@@ -17,6 +17,135 @@ module.exports = {
     }
   },
 
+  // Debug endpoint to troubleshoot search issues
+  async debugSearch(ctx) {
+    try {
+      const { locale = "en", q = "india" } = ctx.query;
+      const typesense = getClient();
+
+      console.log(`Debug search for query: "${q}" in locale: ${locale}`);
+
+      // First, let's see what entities exist in the collection
+      const allEntitiesSearch = await typesense
+        .collections("content")
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: `locale:=${locale}`,
+          per_page: 0,
+          facet_by: "entity",
+        });
+
+      console.log("Entity facet counts:", allEntitiesSearch.facet_counts);
+
+      // Test the actual search with different variations
+      const searchVariations = [
+        {
+          name: "Exact search (India)",
+          params: {
+            q: q,
+            query_by: "title,shortDescription",
+            filter_by: `locale:=${locale}`,
+            per_page: 50,
+          },
+        },
+        {
+          name: "Wildcard search (*india*)",
+          params: {
+            q: `*${q}*`,
+            query_by: "title,shortDescription",
+            filter_by: `locale:=${locale}`,
+            per_page: 50,
+          },
+        },
+        {
+          name: "Prefix search (india*)",
+          params: {
+            q: `${q}*`,
+            query_by: "title,shortDescription",
+            filter_by: `locale:=${locale}`,
+            per_page: 50,
+          },
+        },
+        {
+          name: "Case insensitive (INDIA)",
+          params: {
+            q: q.toUpperCase(),
+            query_by: "title,shortDescription",
+            filter_by: `locale:=${locale}`,
+            per_page: 50,
+          },
+        },
+      ];
+
+      const results = {};
+
+      for (const variation of searchVariations) {
+        try {
+          console.log(`Testing: ${variation.name}`);
+          const searchResult = await typesense
+            .collections("content")
+            .documents()
+            .search(variation.params);
+
+          results[variation.name] = {
+            found: searchResult.found,
+            returned: searchResult.hits.length,
+            samples: searchResult.hits.slice(0, 3).map((hit) => ({
+              id: hit.document.id,
+              title: hit.document.title,
+              entity: hit.document.entity,
+              score: hit.text_match_info?.score || 0,
+            })),
+          };
+
+          console.log(
+            `${variation.name}: Found ${searchResult.found}, returned ${searchResult.hits.length}`
+          );
+        } catch (error) {
+          results[variation.name] = { error: error.message };
+          console.error(`Error with ${variation.name}:`, error.message);
+        }
+      }
+
+      // Also check entity counts for blogs specifically
+      try {
+        const blogSearch = await typesense
+          .collections("content")
+          .documents()
+          .search({
+            q: "*",
+            query_by: "title",
+            filter_by: `locale:=${locale} && entity:=api::blog.blog`,
+            per_page: 10,
+          });
+
+        results.blogCheck = {
+          found: blogSearch.found,
+          samples: blogSearch.hits.slice(0, 5).map((hit) => ({
+            id: hit.document.id,
+            title: hit.document.title,
+            entity: hit.document.entity,
+          })),
+        };
+      } catch (error) {
+        results.blogCheck = { error: error.message };
+      }
+
+      return {
+        locale: locale,
+        query: q,
+        totalDocuments: allEntitiesSearch.found,
+        entityCounts: allEntitiesSearch.facet_counts?.[0]?.counts || [],
+        searchVariations: results,
+      };
+    } catch (error) {
+      console.error("Debug search error:", error);
+      return ctx.badRequest("Debug search failed: " + error.message);
+    }
+  },
+
   // Search API for frontend
   async search(ctx) {
     try {
@@ -136,6 +265,13 @@ module.exports = {
         .documents()
         .search(searchParams);
 
+      console.log("Typesense search results:", {
+        found: searchResults.found,
+        hits: searchResults.hits.length,
+        query: searchParams.q,
+        filterBy: searchParams.filter_by,
+      }); // Debug log
+
       // Count items by entity type for the current results
       const counts = {
         all: searchResults.found,
@@ -200,6 +336,7 @@ module.exports = {
             slug: doc.slug,
             entity: doc.entity,
             locale: doc.locale,
+            highlightImage: doc.highlightImage,
             oldPublishedAt,
             industries: doc.industries?.map((name) => ({ name })) || [],
             geographies: doc.geographies?.map((name) => ({ name })) || [],

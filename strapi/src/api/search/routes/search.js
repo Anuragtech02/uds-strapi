@@ -20,5 +20,10 @@ module.exports = {
         },
       },
     },
+    {
+      method: "GET",
+      path: "/search/debug",
+      handler: "search.debugSearch",
+    },
   ],
 };
