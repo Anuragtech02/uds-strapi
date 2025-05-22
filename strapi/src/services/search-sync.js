@@ -52,7 +52,7 @@ const initializeTypesense = async () => {
 
 const formatDocument = (item, entityType) => {
   // Convert date strings to timestamps for Typesense
-  console.log("Formatting document for Typesense:", item);
+  //   console.log("Formatting document for Typesense:", item);
   const oldPublishedAtTimestamp = item.oldPublishedAt
     ? new Date(item.oldPublishedAt).getTime()
     : item.publishedAt
@@ -79,7 +79,7 @@ const formatDocument = (item, entityType) => {
   if (item.industries && Array.isArray(item.industries)) {
     doc.industries = item.industries.map((industry) => industry.name);
   }
-  console.log("Formatted document:", doc);
+  //   console.log("Formatted document:", doc);
 
   return doc;
 };
@@ -157,8 +157,6 @@ const syncAllContent = async () => {
           // Format and prepare documents
           const documents = items.map((item) => formatDocument(item, entity));
 
-          console.log("Documents to be indexed done");
-
           // Index documents
           await typesense
             .collections(COLLECTION_NAME)
@@ -166,10 +164,6 @@ const syncAllContent = async () => {
             .import(documents, { action: "upsert" });
 
           totalProcessed += items.length;
-
-          console.log(
-            `Indexed ${items.length} items from ${model}, total processed: ${totalProcessed}`
-          );
 
           // Force garbage collection to free memory if available
           if (global.gc) {
