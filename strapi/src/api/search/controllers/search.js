@@ -26,7 +26,9 @@ module.exports = {
         tab,
         page = 1,
         pageSize = 10,
-        sort = "oldPublishedAt:desc", // Keep the same parameter name for frontend compatibility
+        sort = "oldPublishedAt:desc",
+        industries, // Add industries filter
+        geographies, // Add geographies filter
       } = ctx.query;
 
       const minTermLength = 2;
@@ -53,6 +55,28 @@ module.exports = {
         }
         if (entityType) {
           filterBy += ` && entity:=${entityType}`;
+        }
+      }
+
+      // Add industries filter if provided
+      if (industries) {
+        const industriesArray = industries.split(",").filter(Boolean);
+        if (industriesArray.length > 0) {
+          const industriesFilter = industriesArray
+            .map((industry) => `industries:=${industry.trim()}`)
+            .join(" || ");
+          filterBy += ` && (${industriesFilter})`;
+        }
+      }
+
+      // Add geographies filter if provided (only affects reports since blogs/news don't have geographies)
+      if (geographies) {
+        const geographiesArray = geographies.split(",").filter(Boolean);
+        if (geographiesArray.length > 0) {
+          const geographiesFilter = geographiesArray
+            .map((geography) => `geographies:=${geography.trim()}`)
+            .join(" || ");
+          filterBy += ` && (${geographiesFilter})`;
         }
       }
 
@@ -142,7 +166,7 @@ module.exports = {
             const countParams = {
               q: isEmptySearch ? "*" : term,
               query_by: "title,shortDescription",
-              filter_by: `${filterBy} && entity:=${entityType.key}`,
+              filter_by: `locale:=${locale} && entity:=${entityType.key}`, // Use base filter without tab-specific filtering
               per_page: 0, // We only want the count
             };
 
@@ -178,6 +202,7 @@ module.exports = {
             locale: doc.locale,
             oldPublishedAt,
             industries: doc.industries?.map((name) => ({ name })) || [],
+            geographies: doc.geographies?.map((name) => ({ name })) || [],
           };
         }),
         meta: {
