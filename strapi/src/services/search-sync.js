@@ -80,7 +80,7 @@ const formatDocument = (item, entityType) => {
     createdAt: createdAtTimestamp,
   };
 
-  // Add industries if available - handle the case where industries might not have locale
+  // Add industries if available
   if (item.industries && Array.isArray(item.industries)) {
     doc.industries = item.industries
       .map((industry) =>
@@ -88,11 +88,10 @@ const formatDocument = (item, entityType) => {
           ? industry
           : industry.name || industry.title || ""
       )
-      .filter(Boolean); // Remove empty strings
+      .filter(Boolean);
   }
 
-  // Add geographies if available - handle the case where geographies might not have locale
-  // Only add if the item actually has geographies (for reports)
+  // Add geographies if available (only for reports)
   if (item.geographies && Array.isArray(item.geographies)) {
     doc.geographies = item.geographies
       .map((geography) =>
@@ -100,7 +99,7 @@ const formatDocument = (item, entityType) => {
           ? geography
           : geography.name || geography.title || ""
       )
-      .filter(Boolean); // Remove empty strings
+      .filter(Boolean);
   } else {
     // For content types without geographies, set empty array
     doc.geographies = [];
@@ -125,17 +124,17 @@ const syncAllContent = async () => {
       {
         model: "api::report.report",
         entity: "api::report.report",
-        relations: ["industries", "geographies"], // Reports have both
+        relations: ["industries", "geographies"],
       },
       {
         model: "api::blog.blog",
         entity: "api::blog.blog",
-        relations: ["industries"], // Blogs only have industries
+        relations: ["industries"],
       },
       {
         model: "api::news-article.news-article",
         entity: "api::news-article.news-article",
-        relations: ["industries"], // News articles only have industries
+        relations: ["industries"],
       },
     ];
 
@@ -162,12 +161,14 @@ const syncAllContent = async () => {
         console.log(`${model}: Error checking - ${error.message}`);
       }
     }
+    console.log("=== END CONTENT AUDIT ===\n");
 
     let totalProcessed = 0;
+    const BATCH_SIZE = 50;
 
-    // Process each content type separately to avoid loading everything into memory
+    // Process each content type
     for (const { model, entity, relations } of contentTypes) {
-      console.log(`\n=== Starting to process ${model} ===`);
+      console.log(`\n=== Processing ${model} ===`);
 
       // Get total count
       const totalCount = await strapi.db.query(model).count();
@@ -178,152 +179,100 @@ const syncAllContent = async () => {
         continue;
       }
 
-      // Process in small batches to avoid memory issues
-      const BATCH_SIZE = 50; // Reduced batch size to avoid memory issues
-      const LOCALE_BATCH_SIZE = 2; // Process 2 locales at a time to reduce memory pressure
+      // Build populate object
+      const populateObj = {};
+      relations.forEach((relation) => {
+        populateObj[relation] = {
+          select: ["name"],
+        };
+      });
 
-      // Get available locales
-      const locales = await strapi.plugin("i18n").service("locales").find();
-      const localesCodes = locales.map((locale) => locale.code);
+      let processedCount = 0;
 
-      // Process each locale batch
-      for (
-        let localeIndex = 0;
-        localeIndex < localesCodes.length;
-        localeIndex += LOCALE_BATCH_SIZE
-      ) {
-        const currentLocales = localesCodes.slice(
-          localeIndex,
-          localeIndex + LOCALE_BATCH_SIZE
-        );
-        console.log(
-          `Processing locales: ${currentLocales.join(", ")} for ${model}`
-        );
+      // Simple pagination - process all items regardless of locale
+      for (let offset = 0; offset < totalCount; offset += BATCH_SIZE) {
+        try {
+          console.log(
+            `Processing ${model} batch: ${offset + 1}-${Math.min(
+              offset + BATCH_SIZE,
+              totalCount
+            )} of ${totalCount}`
+          );
 
-        // Process in paginated batches
-        for (let offset = 0; offset < totalCount; offset += BATCH_SIZE) {
-          try {
-            // Build populate object based on available relations for this content type
-            const populateObj = {};
-            relations.forEach((relation) => {
-              populateObj[relation] = {
-                select: ["name"],
-              };
-            });
+          const items = await strapi.db.query(model).findMany({
+            populate: populateObj,
+            limit: BATCH_SIZE,
+            offset,
+            orderBy: { id: "asc" }, // Ensure consistent ordering
+          });
 
-            // Query only the current batch with specific locales
-            const items = await strapi.db.query(model).findMany({
-              populate: populateObj,
-              filters: {
-                locale: {
-                  $in: currentLocales,
-                },
-              },
-              limit: BATCH_SIZE,
-              offset,
-            });
-
-            if (items.length === 0) {
-              console.log(
-                `No items found for ${model} at offset ${offset} for locales ${currentLocales.join(
-                  ", "
-                )}`
-              );
-              continue;
-            }
-
+          if (items.length === 0) {
             console.log(
-              `Processing batch of ${
-                items.length
-              } ${model} items, offset ${offset}, locales: ${currentLocales.join(
-                ", "
-              )}`
+              `No more items found for ${model} at offset ${offset}, ending...`
             );
+            break;
+          }
 
-            // Format and prepare documents
-            const documents = items.map((item) => {
-              try {
-                return formatDocument(item, entity);
-              } catch (formatError) {
-                console.error(
-                  `Error formatting document ${item.id}:`,
-                  formatError
-                );
-                // Return a basic document without industries if formatting fails
-                return {
-                  id: item.id.toString(),
-                  title: item.title || item.name || "",
-                  shortDescription: item.shortDescription || "",
-                  slug: item.slug || "",
-                  entity: entity,
-                  locale: item.locale || "en",
-                  oldPublishedAt: item.oldPublishedAt
-                    ? new Date(item.oldPublishedAt).getTime()
-                    : new Date().getTime(),
-                  createdAt: item.createdAt
-                    ? new Date(item.createdAt).getTime()
-                    : new Date().getTime(),
-                  industries: [],
-                  geographies: [],
-                };
-              }
-            });
-
-            // Filter out any null documents
-            const validDocuments = documents.filter((doc) => doc && doc.id);
-
-            if (validDocuments.length === 0) {
-              console.log(
-                `No valid documents to index for this batch of ${model}`
-              );
-              continue;
-            }
-
-            // Index documents
+          // Format and prepare documents
+          const documents = [];
+          items.forEach((item) => {
             try {
-              const importResult = await typesense
-                .collections(COLLECTION_NAME)
-                .documents()
-                .import(validDocuments, { action: "upsert" });
-
-              console.log(
-                `Successfully indexed ${validDocuments.length} ${model} documents`
-              );
-              totalProcessed += validDocuments.length;
-            } catch (indexError) {
+              const doc = formatDocument(item, entity);
+              documents.push(doc);
+            } catch (formatError) {
               console.error(
-                `Error indexing batch of ${model} documents:`,
-                indexError
+                `Error formatting document ${item.id}:`,
+                formatError
               );
-              // Continue with next batch rather than failing completely
             }
+          });
 
-            // Force garbage collection to free memory if available
-            if (global.gc) {
-              global.gc();
-            }
-
-            // Short delay to allow other operations
-            await new Promise((resolve) => setTimeout(resolve, 100));
-          } catch (batchError) {
-            console.error(
-              `Error processing batch for ${model} at offset ${offset}:`,
-              batchError
+          if (documents.length === 0) {
+            console.log(
+              `No valid documents to index for this batch of ${model}`
             );
-            // Continue with next batch
             continue;
           }
+
+          // Index documents
+          try {
+            await typesense
+              .collections(COLLECTION_NAME)
+              .documents()
+              .import(documents, { action: "upsert" });
+
+            processedCount += documents.length;
+            totalProcessed += documents.length;
+            console.log(
+              `✅ Indexed ${documents.length} ${model} documents (${processedCount}/${totalCount} total for this type)`
+            );
+          } catch (indexError) {
+            console.error(
+              `❌ Error indexing batch of ${model} documents:`,
+              indexError
+            );
+          }
+
+          // Small delay to prevent overwhelming the system
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        } catch (error) {
+          console.error(
+            `Error processing batch for ${model} at offset ${offset}:`,
+            error
+          );
+          continue;
         }
       }
 
-      console.log(`=== Completed processing ${model} ===\n`);
+      console.log(
+        `=== Completed ${model}: ${processedCount} items processed ===`
+      );
     }
 
     console.log(`\n=== SYNC COMPLETE ===`);
     console.log(`Successfully synced ${totalProcessed} documents to Typesense`);
-    console.log(`Content breakdown:`);
 
-    // Get a breakdown of what was synced
+    // Get final stats
     try {
       const typesense = getClient();
       const stats = await typesense
@@ -335,13 +284,14 @@ const syncAllContent = async () => {
           facet_by: "entity,locale",
         });
 
-      console.log(`Total documents in Typesense: ${stats.found}`);
+      console.log(`\nFinal Typesense Statistics:`);
+      console.log(`Total documents: ${stats.found}`);
       if (stats.facet_counts) {
         stats.facet_counts.forEach((facet) => {
-          console.log(
-            `${facet.field_name}:`,
-            facet.counts.map((c) => `${c.value}: ${c.count}`).join(", ")
-          );
+          console.log(`\n${facet.field_name}:`);
+          facet.counts.forEach((count) => {
+            console.log(`  ${count.value}: ${count.count} documents`);
+          });
         });
       }
     } catch (statsError) {
@@ -349,7 +299,7 @@ const syncAllContent = async () => {
     }
   } catch (error) {
     console.error("Error syncing content to Typesense:", error);
-    throw error; // Re-throw to let caller know sync failed
+    throw error;
   }
 };
 
@@ -404,19 +354,6 @@ const syncSingleItem = async (item, entityType) => {
   }
 };
 
-// Helper function to get relations for each entity type
-const getEntityRelations = (entityType) => {
-  switch (entityType) {
-    case "api::report.report":
-      return ["industries", "geographies"];
-    case "api::blog.blog":
-    case "api::news-article.news-article":
-      return ["industries"];
-    default:
-      return ["industries"]; // Default fallback
-  }
-};
-
 // Delete single document
 const deleteSingleItem = async (item, entityType) => {
   if (!item || !item.id) return;
@@ -440,10 +377,23 @@ const deleteSingleItem = async (item, entityType) => {
   }
 };
 
+// Helper function to get relations for each entity type
+const getEntityRelations = (entityType) => {
+  switch (entityType) {
+    case "api::report.report":
+      return ["industries", "geographies"];
+    case "api::blog.blog":
+    case "api::news-article.news-article":
+      return ["industries"];
+    default:
+      return ["industries"]; // Default fallback
+  }
+};
+
 module.exports = {
   initializeTypesense,
   syncAllContent,
   syncSingleItem,
   deleteSingleItem,
-  getEntityRelations, // Export helper function for use in lifecycle hooks
+  getEntityRelations,
 };
