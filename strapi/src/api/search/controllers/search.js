@@ -1253,4 +1253,344 @@ module.exports = {
       return ctx.badRequest("Frontend search test failed: " + error.message);
     }
   },
+  // Add this diagnostic method to your search controller
+
+  async debugBlogSync(ctx) {
+    try {
+      console.log("🔍 DIAGNOSING BLOG SYNC ISSUE...");
+
+      // 1. Check English blogs in database
+      console.log("\n📊 STEP 1: Database Analysis");
+
+      const dbEnglishBlogs = await strapi.db.query("api::blog.blog").findMany({
+        limit: 10,
+        filters: {
+          locale: "en",
+          $or: [
+            { publishedAt: { $notNull: true } },
+            { published_at: { $notNull: true } },
+          ],
+        },
+        populate: {
+          industries: { select: ["name"] },
+          highlightImage: { select: ["url"] },
+        },
+      });
+
+      const totalEnglishBlogs = await strapi.db.query("api::blog.blog").count({
+        filters: {
+          locale: "en",
+          $or: [
+            { publishedAt: { $notNull: true } },
+            { published_at: { $notNull: true } },
+          ],
+        },
+      });
+
+      console.log(
+        `📈 Total published English blogs in DB: ${totalEnglishBlogs}`
+      );
+      console.log("📝 Sample English blogs from DB:");
+      dbEnglishBlogs.forEach((blog, index) => {
+        console.log(
+          `  ${index + 1}. "${blog.title}" (ID: ${blog.id}, locale: ${
+            blog.locale
+          })`
+        );
+        console.log(
+          `     Published: ${blog.publishedAt || blog.published_at || "N/A"}`
+        );
+        console.log(
+          `     Industries: ${
+            blog.industries?.map((i) => i.name).join(", ") || "None"
+          }`
+        );
+      });
+
+      // 2. Check what's in Typesense for English
+      console.log("\n📊 STEP 2: Typesense Analysis");
+      const typesense = getClient();
+
+      const typesenseEnglishBlogs = await typesense
+        .collections("search_content_v2")
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: "locale:=en && entity:=api::blog.blog",
+          per_page: 20,
+        });
+
+      console.log(
+        `📈 English blogs in Typesense: ${typesenseEnglishBlogs.found}`
+      );
+      console.log("📝 Sample English blogs from Typesense:");
+      typesenseEnglishBlogs.hits.forEach((hit, index) => {
+        const doc = hit.document;
+        console.log(
+          `  ${index + 1}. "${doc.title}" (ID: ${doc.id}, originalId: ${
+            doc.originalId
+          })`
+        );
+        console.log(`     Locale: ${doc.locale}, Entity: ${doc.entity}`);
+      });
+
+      // 3. Check if specific blogs from DB exist in Typesense
+      console.log("\n📊 STEP 3: Cross-Reference Check");
+      const missingBlogs = [];
+
+      for (const dbBlog of dbEnglishBlogs.slice(0, 5)) {
+        // Check first 5
+        const typesenseId = `${dbBlog.id}_${dbBlog.locale}`;
+
+        try {
+          const typesenseDoc = await typesense
+            .collections("search_content_v2")
+            .documents(typesenseId)
+            .retrieve();
+
+          console.log(
+            `✅ Blog ${dbBlog.id} ("${dbBlog.title}") EXISTS in Typesense`
+          );
+        } catch (error) {
+          if (error.httpStatus === 404) {
+            console.log(
+              `❌ Blog ${dbBlog.id} ("${dbBlog.title}") MISSING from Typesense`
+            );
+            missingBlogs.push(dbBlog);
+          } else {
+            console.log(`⚠️ Error checking blog ${dbBlog.id}:`, error.message);
+          }
+        }
+      }
+
+      // 4. Test document preparation for missing blogs
+      if (missingBlogs.length > 0) {
+        console.log("\n📊 STEP 4: Document Preparation Test");
+
+        for (const missingBlog of missingBlogs.slice(0, 2)) {
+          try {
+            console.log(`\n🧪 Testing preparation for blog ${missingBlog.id}:`);
+
+            // Import the document preparation function
+            const {
+              prepareDocumentForIndexing,
+            } = require("../../../services/document-helpers");
+            const preparedDoc = prepareDocumentForIndexing(
+              missingBlog,
+              "api::blog.blog"
+            );
+
+            console.log(
+              "📄 Prepared document:",
+              JSON.stringify(preparedDoc, null, 2)
+            );
+
+            // Try to index this specific blog
+            console.log("🔧 Attempting to index this blog...");
+            const indexResult = await typesense
+              .collections("search_content_v2")
+              .documents()
+              .upsert(preparedDoc);
+
+            console.log("✅ Successfully indexed:", indexResult);
+          } catch (prepError) {
+            console.log("❌ Error preparing/indexing blog:", prepError.message);
+            console.log("📋 Full error:", prepError);
+          }
+        }
+      }
+
+      // 5. Check for common indexing issues
+      console.log("\n📊 STEP 5: Common Issues Check");
+
+      // Check for blogs with missing required fields
+      const blogsWithIssues = await strapi.db.query("api::blog.blog").findMany({
+        limit: 100,
+        filters: {
+          locale: "en",
+          $or: [
+            { publishedAt: { $notNull: true } },
+            { published_at: { $notNull: true } },
+          ],
+        },
+      });
+
+      const issueAnalysis = {
+        missingTitle: 0,
+        missingSlug: 0,
+        missingShortDescription: 0,
+        invalidDates: 0,
+        total: blogsWithIssues.length,
+      };
+
+      blogsWithIssues.forEach((blog) => {
+        if (!blog.title) issueAnalysis.missingTitle++;
+        if (!blog.slug) issueAnalysis.missingSlug++;
+        if (!blog.shortDescription) issueAnalysis.missingShortDescription++;
+
+        const dateFields = ["oldPublishedAt", "publishedAt", "published_at"];
+        const hasValidDate = dateFields.some((field) => {
+          if (blog[field]) {
+            try {
+              new Date(blog[field]).getTime();
+              return true;
+            } catch {
+              return false;
+            }
+          }
+          return false;
+        });
+
+        if (!hasValidDate) issueAnalysis.invalidDates++;
+      });
+
+      console.log("🔍 Issue analysis for English blogs:", issueAnalysis);
+
+      // 6. Check lifecycle hooks
+      console.log("\n📊 STEP 6: Lifecycle Hooks Check");
+      const lifecycleStatus =
+        strapi.db.lifecycles.subscribers.get("api::blog.blog");
+      console.log("🔗 Blog lifecycle hooks registered:", !!lifecycleStatus);
+
+      return {
+        timestamp: new Date().toISOString(),
+        summary: {
+          databaseEnglishBlogs: totalEnglishBlogs,
+          typesenseEnglishBlogs: typesenseEnglishBlogs.found,
+          discrepancy: totalEnglishBlogs - typesenseEnglishBlogs.found,
+          sampleMissingBlogs: missingBlogs.slice(0, 3).map((b) => ({
+            id: b.id,
+            title: b.title,
+            publishedAt: b.publishedAt || b.published_at,
+          })),
+          issueAnalysis: issueAnalysis,
+          lifecycleHooksActive: !!lifecycleStatus,
+        },
+        recommendations: [
+          totalEnglishBlogs > typesenseEnglishBlogs.found
+            ? "❌ Major sync issue detected"
+            : "✅ Sync appears normal",
+          missingBlogs.length > 0
+            ? "❌ Some blogs missing from search index"
+            : "✅ Sample blogs found in index",
+          issueAnalysis.missingShortDescription > 0
+            ? "⚠️ Some blogs missing shortDescription"
+            : "✅ All blogs have shortDescription",
+          !lifecycleStatus
+            ? "❌ Lifecycle hooks not registered"
+            : "✅ Lifecycle hooks active",
+        ],
+      };
+    } catch (error) {
+      console.error("❌ Blog sync diagnostic failed:", error);
+      return ctx.badRequest("Diagnostic failed: " + error.message);
+    }
+  },
+
+  // Add this method to manually sync English blogs
+  async syncEnglishBlogsOnly(ctx) {
+    if (!ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
+      return ctx.forbidden("Only admins can sync blogs");
+    }
+
+    try {
+      console.log("🔄 Starting English blogs sync...");
+
+      // Get all published English blogs
+      const englishBlogs = await strapi.db.query("api::blog.blog").findMany({
+        filters: {
+          locale: "en",
+          $or: [
+            { publishedAt: { $notNull: true } },
+            { published_at: { $notNull: true } },
+          ],
+        },
+        populate: {
+          industries: { select: ["name"] },
+          highlightImage: { select: ["url"] },
+        },
+      });
+
+      console.log(`📊 Found ${englishBlogs.length} English blogs to sync`);
+
+      if (englishBlogs.length === 0) {
+        return { success: false, message: "No English blogs found to sync" };
+      }
+
+      const typesense = getClient();
+      const {
+        prepareDocumentForIndexing,
+      } = require("../../../services/document-helpers");
+
+      let synced = 0;
+      let failed = 0;
+
+      // Process in batches
+      const batchSize = 20;
+      for (let i = 0; i < englishBlogs.length; i += batchSize) {
+        const batch = englishBlogs.slice(i, i + batchSize);
+        const documents = [];
+
+        for (const blog of batch) {
+          try {
+            const doc = prepareDocumentForIndexing(blog, "api::blog.blog");
+            documents.push(doc);
+          } catch (prepError) {
+            console.error(`❌ Error preparing blog ${blog.id}:`, prepError);
+            failed++;
+          }
+        }
+
+        if (documents.length > 0) {
+          try {
+            const results = await typesense
+              .collections("search_content_v2")
+              .documents()
+              .import(documents, { action: "upsert" });
+
+            const batchSucceeded = results.filter((r) => r.success).length;
+            const batchFailed = results.filter((r) => !r.success).length;
+
+            synced += batchSucceeded;
+            failed += batchFailed;
+
+            console.log(
+              `✅ Batch ${
+                Math.floor(i / batchSize) + 1
+              }: ${batchSucceeded} synced, ${batchFailed} failed`
+            );
+          } catch (batchError) {
+            console.error(`❌ Batch error:`, batchError);
+            failed += documents.length;
+          }
+        }
+      }
+
+      // Verify result
+      const finalCount = await typesense
+        .collections("search_content_v2")
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: "locale:=en && entity:=api::blog.blog",
+          per_page: 0,
+        });
+
+      console.log(
+        `🎉 Sync complete! ${finalCount.found} English blogs now in search index`
+      );
+
+      return {
+        success: true,
+        message: `Synced ${synced} blogs, ${failed} failed`,
+        finalCount: finalCount.found,
+        processed: englishBlogs.length,
+      };
+    } catch (error) {
+      console.error("❌ English blog sync failed:", error);
+      return ctx.badRequest("Sync failed: " + error.message);
+    }
+  },
 };

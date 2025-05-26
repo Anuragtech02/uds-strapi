@@ -61,5 +61,25 @@ module.exports = {
         auth: false, // Remove for production
       },
     },
+    // Add these routes to your search routes file
+
+    {
+      method: "GET",
+      path: "/search/debug-blog-sync",
+      handler: "search.debugBlogSync",
+      config: {
+        auth: false, // Remove for production
+      },
+    },
+    {
+      method: "POST",
+      path: "/search/sync-english-blogs",
+      handler: "search.syncEnglishBlogsOnly",
+      config: {
+        auth: {
+          scope: ["admin"],
+        },
+      },
+    },
   ],
 };
