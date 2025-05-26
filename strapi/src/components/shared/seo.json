@@ -16,7 +16,7 @@
       "type": "string",
       "required": true,
       "maxLength": 400,
-      "minLength": 20
+      "minLength": 5
     },
     "metaImage": {
       "type": "media",

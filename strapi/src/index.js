@@ -142,46 +142,46 @@ module.exports = {
       "api::news-article.news-article",
     ];
 
-    // for (const model of contentModels) {
-    //   try {
-    //     strapi.db.lifecycles.subscribe({
-    //       models: [model],
+    for (const model of contentModels) {
+      try {
+        strapi.db.lifecycles.subscribe({
+          models: [model],
 
-    //       afterCreate: async (event) => {
-    //         console.log(`📝 ${model} created: ${event.result.id}`);
-    //         await handleContentUpdate(event);
-    //       },
+          afterCreate: async (event) => {
+            console.log(`📝 ${model} created: ${event.result.id}`);
+            await handleContentUpdate(event);
+          },
 
-    //       afterUpdate: async (event) => {
-    //         console.log(`✏️ ${model} updated: ${event.result.id}`);
-    //         await handleContentUpdate(event);
-    //       },
+          afterUpdate: async (event) => {
+            console.log(`✏️ ${model} updated: ${event.result.id}`);
+            await handleContentUpdate(event);
+          },
 
-    //       afterDelete: async (event) => {
-    //         console.log(`🗑️ ${model} deleted: ${event.result.id}`);
-    //         await handleContentDelete(event);
-    //       },
+          afterDelete: async (event) => {
+            console.log(`🗑️ ${model} deleted: ${event.result.id}`);
+            await handleContentDelete(event);
+          },
 
-    //       // Also handle publish/unpublish events
-    //       afterPublish: async (event) => {
-    //         console.log(`📢 ${model} published: ${event.result.id}`);
-    //         await handleContentUpdate(event);
-    //       },
+          // Also handle publish/unpublish events
+          afterPublish: async (event) => {
+            console.log(`📢 ${model} published: ${event.result.id}`);
+            await handleContentUpdate(event);
+          },
 
-    //       afterUnpublish: async (event) => {
-    //         console.log(`📝 ${model} unpublished: ${event.result.id}`);
-    //         await handleContentDelete(event);
-    //       },
-    //     });
+          afterUnpublish: async (event) => {
+            console.log(`📝 ${model} unpublished: ${event.result.id}`);
+            await handleContentDelete(event);
+          },
+        });
 
-    //     console.log(`✅ Lifecycle hooks set up for ${model}`);
-    //   } catch (hookError) {
-    //     console.error(
-    //       `❌ Failed to set up lifecycle hooks for ${model}:`,
-    //       hookError
-    //     );
-    //   }
-    // }
+        console.log(`✅ Lifecycle hooks set up for ${model}`);
+      } catch (hookError) {
+        console.error(
+          `❌ Failed to set up lifecycle hooks for ${model}:`,
+          hookError
+        );
+      }
+    }
 
     // Set up scheduled full sync (optional - for data consistency)
     if (strapi.cron) {
