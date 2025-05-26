@@ -9,6 +9,7 @@ const {
   prepareReportDocument,
   prepareNewsDocument,
   prepareDocumentForIndexing,
+  prepareDocumentWithMedia,
 } = require("./document-helpers");
 
 const COLLECTION_NAME = "search_content_v2";
@@ -113,16 +114,14 @@ async function syncContentType(model, entityType, batchSize = 50) {
           )})`
         );
 
-        // Build populate object based on entity type
+        // FIXED: Simplified populate object to avoid media table filtering
         let populateObj = {};
 
         if (entityType === "api::report.report") {
           populateObj = {
             industry: true, // Reports use singular
             geography: true, // Reports use singular
-            highlightImage: {
-              select: ["url", "alternativeText", "width", "height", "formats"],
-            },
+            highlightImage: true, // ✅ SIMPLIFIED - no select to avoid filtering issues
           };
         } else if (entityType === "api::blog.blog") {
           populateObj = {
@@ -207,8 +206,12 @@ async function syncContentType(model, entityType, batchSize = 50) {
           }
         }
       } catch (batchError) {
-        console.error(`❌ Batch processing error:`, batchError);
+        console.error(`❌ Batch processing error:`, batchError.message);
         failed += batchSize;
+
+        // Continue with next batch instead of stopping
+        console.log("⏭️ Continuing with next batch...");
+        continue;
       }
     }
 

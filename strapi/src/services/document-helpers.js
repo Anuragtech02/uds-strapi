@@ -103,7 +103,6 @@ function prepareDocument(item, entityType) {
   return doc;
 }
 
-// Updated document preparation to ensure highlightImage is always a string
 function prepareDocumentWithMedia(item, entityType) {
   // Create base document structure
   const doc = {
@@ -117,39 +116,51 @@ function prepareDocumentWithMedia(item, entityType) {
     highlightImage: null, // Will be string or null
   };
 
-  // ONLY handle highlightImage for reports, ensure it's a string
+  // ONLY handle highlightImage for reports, with better error handling
   if (entityType === "api::report.report" && item.highlightImage) {
-    let imageUrl = null;
+    try {
+      let imageUrl = null;
 
-    if (typeof item.highlightImage === "object") {
-      // Strapi v4 format: item.highlightImage = { id, url, alternativeText, etc. }
-      if (item.highlightImage.url) {
-        imageUrl = item.highlightImage.url;
-      }
-      // Strapi v4 nested format: item.highlightImage = { data: { attributes: { url } } }
-      else if (item.highlightImage.data?.attributes?.url) {
-        imageUrl = item.highlightImage.data.attributes.url;
-      }
-      // Array format (shouldn't happen with multiple: false, but just in case)
-      else if (
-        Array.isArray(item.highlightImage) &&
-        item.highlightImage[0]?.url
+      if (
+        typeof item.highlightImage === "object" &&
+        item.highlightImage !== null
       ) {
-        imageUrl = item.highlightImage[0].url;
+        // Handle different Strapi media formats
+        if (item.highlightImage.url) {
+          // Direct format: { url: "...", alternativeText: "..." }
+          imageUrl = item.highlightImage.url;
+        } else if (item.highlightImage.data?.attributes?.url) {
+          // Strapi v4 format: { data: { attributes: { url: "..." } } }
+          imageUrl = item.highlightImage.data.attributes.url;
+        } else if (
+          Array.isArray(item.highlightImage) &&
+          item.highlightImage[0]?.url
+        ) {
+          // Array format (shouldn't happen with multiple: false)
+          imageUrl = item.highlightImage[0].url;
+        }
+      } else if (typeof item.highlightImage === "string") {
+        // Already a URL string
+        imageUrl = item.highlightImage;
       }
-    } else if (typeof item.highlightImage === "string") {
-      // Already a URL string
-      imageUrl = item.highlightImage;
-    }
 
-    // Ensure it's a valid string
-    if (imageUrl && typeof imageUrl === "string" && imageUrl.trim()) {
-      doc.highlightImage = imageUrl.trim();
-    } else {
-      doc.highlightImage = null; // Explicitly set to null if invalid
+      // Validate and clean the URL
+      if (imageUrl && typeof imageUrl === "string" && imageUrl.trim()) {
+        doc.highlightImage = imageUrl.trim();
+        console.log(
+          `🖼️ Report ${item.id} highlightImage: ${doc.highlightImage}`
+        );
+      } else {
+        doc.highlightImage = null;
+        console.log(`⚠️ Report ${item.id} has invalid highlightImage format`);
+      }
+    } catch (imageError) {
+      console.warn(
+        `⚠️ Error processing highlightImage for report ${item.id}:`,
+        imageError.message
+      );
+      doc.highlightImage = null;
     }
-
-    console.log(`🖼️ Report ${item.id} highlightImage: ${doc.highlightImage}`);
   } else {
     // For blogs and news, explicitly set to null
     doc.highlightImage = null;
@@ -180,33 +191,51 @@ function prepareDocumentWithMedia(item, entityType) {
     }
   }
 
-  // Handle industries (reports use "industry" singular, blogs use "industries" plural)
+  // Handle industries with error handling
   doc.industries = [];
-  if (item.industry) {
-    // Single industry (reports)
-    const industryName =
-      typeof item.industry === "string" ? item.industry : item.industry.name;
-    if (industryName) {
-      doc.industries = [industryName];
+  try {
+    if (item.industry) {
+      // Single industry (reports)
+      const industryName =
+        typeof item.industry === "string" ? item.industry : item.industry.name;
+      if (industryName) {
+        doc.industries = [industryName];
+      }
+    } else if (item.industries && Array.isArray(item.industries)) {
+      // Multiple industries (blogs)
+      doc.industries = item.industries
+        .map((industry) =>
+          typeof industry === "string" ? industry : industry.name
+        )
+        .filter(Boolean);
     }
-  } else if (item.industries && Array.isArray(item.industries)) {
-    // Multiple industries (blogs)
-    doc.industries = item.industries
-      .map((industry) =>
-        typeof industry === "string" ? industry : industry.name
-      )
-      .filter(Boolean);
+  } catch (industryError) {
+    console.warn(
+      `⚠️ Error processing industries for ${entityType} ${item.id}:`,
+      industryError.message
+    );
+    doc.industries = [];
   }
 
-  // Handle geographies (only reports have geographies)
+  // Handle geographies with error handling (only reports have geographies)
   doc.geographies = [];
-  if (entityType === "api::report.report" && item.geography) {
-    // Single geography (reports)
-    const geographyName =
-      typeof item.geography === "string" ? item.geography : item.geography.name;
-    if (geographyName) {
-      doc.geographies = [geographyName];
+  try {
+    if (entityType === "api::report.report" && item.geography) {
+      // Single geography (reports)
+      const geographyName =
+        typeof item.geography === "string"
+          ? item.geography
+          : item.geography.name;
+      if (geographyName) {
+        doc.geographies = [geographyName];
+      }
     }
+  } catch (geographyError) {
+    console.warn(
+      `⚠️ Error processing geographies for ${entityType} ${item.id}:`,
+      geographyError.message
+    );
+    doc.geographies = [];
   }
 
   return doc;
