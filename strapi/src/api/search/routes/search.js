@@ -45,5 +45,21 @@ module.exports = {
       path: "/search/debug-locales",
       handler: "search.debugLocales",
     },
+    {
+      method: "GET",
+      path: "/search/debug-collection",
+      handler: "search.debugCollectionIssues",
+      config: {
+        auth: false, // Remove for production
+      },
+    },
+    {
+      method: "GET",
+      path: "/search/test-frontend",
+      handler: "search.testFrontendSearch",
+      config: {
+        auth: false, // Remove for production
+      },
+    },
   ],
 };

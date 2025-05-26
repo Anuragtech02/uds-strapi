@@ -2,569 +2,362 @@
 
 const { getClient } = require("./typesense");
 
+// Import the document preparation helpers
+const {
+  prepareDocument,
+  prepareBlogDocument,
+  prepareReportDocument,
+  prepareNewsDocument,
+  prepareDocumentForIndexing,
+} = require("./document-helpers"); // You'll create this file with the helper functions
+
 const COLLECTION_NAME = "search_content_v2";
 
-const initializeTypesense = async () => {
+const COLLECTION_SCHEMA = {
+  name: COLLECTION_NAME,
+  fields: [
+    { name: "id", type: "string" },
+    { name: "originalId", type: "string" },
+    { name: "title", type: "string" },
+    { name: "shortDescription", type: "string", optional: true },
+    { name: "slug", type: "string", optional: true },
+    { name: "entity", type: "string", facet: true },
+    { name: "locale", type: "string", facet: true },
+    { name: "highlightImage", type: "object", optional: true },
+    { name: "oldPublishedAt", type: "int64", optional: true },
+    { name: "createdAt", type: "int64", optional: true },
+    { name: "industries", type: "string[]", facet: true, optional: true },
+    { name: "geographies", type: "string[]", facet: true, optional: true },
+    { name: "author", type: "string", optional: true },
+    { name: "tags", type: "string[]", facet: true, optional: true },
+    { name: "source", type: "string", optional: true },
+    { name: "category", type: "string", optional: true },
+    { name: "reportType", type: "string", optional: true },
+    { name: "pages", type: "int32", optional: true },
+    { name: "price", type: "float", optional: true },
+  ],
+};
+
+async function createCollection() {
   const typesense = getClient();
 
-  console.log("Initializing Typesense and creating collection...");
-
   try {
-    // First, ALWAYS try to create the collection
+    // Try to delete existing collection
     try {
-      console.log("Creating collection search_content_v2...");
-      const createResult = await typesense.collections().create({
-        name: COLLECTION_NAME, // "search_content_v2"
-        fields: [
-          { name: "id", type: "string" },
-          { name: "originalId", type: "string" },
-          { name: "title", type: "string" },
-          { name: "shortDescription", type: "string", optional: true },
-          { name: "slug", type: "string" },
-          { name: "entity", type: "string", facet: true },
-          { name: "locale", type: "string", facet: true },
-          { name: "industries", type: "string[]", facet: true, optional: true },
-          {
-            name: "geographies",
-            type: "string[]",
-            facet: true,
-            optional: true,
-          },
-          { name: "highlightImage", type: "string", optional: true },
-          { name: "oldPublishedAt", type: "int64", sort: true },
-          { name: "createdAt", type: "int64", sort: true, optional: true },
-        ],
-        default_sorting_field: "oldPublishedAt",
-        // Add explicit token separators to improve search
-        token_separators: ["-", "_"],
-        symbols_to_index: ["_"],
-      });
-      console.log("Collection created successfully:", createResult);
-      return true;
-    } catch (createError) {
-      // If collection already exists, we'll get a 409 Conflict error, which is fine
-      if (
-        createError.httpStatus === 409 ||
-        (createError.message && createError.message.includes("409"))
-      ) {
-        console.log("Collection already exists, continuing...");
-        return true;
-      } else {
-        // If it's another error, log and re-throw
-        console.error("Failed to create collection:", createError);
-        throw createError;
+      await typesense.collections(COLLECTION_NAME).delete();
+      console.log(`🗑️ Deleted existing collection: ${COLLECTION_NAME}`);
+    } catch (deleteError) {
+      if (deleteError.httpStatus !== 404) {
+        console.log("⚠️ Error deleting collection:", deleteError.message);
       }
     }
+
+    // Wait a moment for cleanup
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Create new collection
+    const result = await typesense.collections().create(COLLECTION_SCHEMA);
+    console.log(`✅ Created collection: ${COLLECTION_NAME}`);
+    return result;
   } catch (error) {
-    console.error("Error initializing Typesense:", error);
-    return false;
+    console.error("❌ Error creating collection:", error);
+    throw error;
   }
-};
+}
 
-const formatDocument = (item, entityType) => {
-  // Convert date strings to timestamps for Typesense
-  const oldPublishedAtTimestamp = item.oldPublishedAt
-    ? new Date(item.oldPublishedAt).getTime()
-    : item.publishedAt
-    ? new Date(item.publishedAt).getTime()
-    : item.published_at // Some might use snake_case
-    ? new Date(item.published_at).getTime()
-    : null;
-
-  const createdAtTimestamp = item.createdAt
-    ? new Date(item.createdAt).getTime()
-    : item.created_at
-    ? new Date(item.created_at).getTime()
-    : new Date().getTime();
-
-  // Format document for Typesense based on entity type
-  // Create unique ID combining original ID with locale
-  const uniqueId = `${item.id}_${item.locale || "en"}`;
-
-  const doc = {
-    id: uniqueId, // Use unique ID to prevent locale conflicts
-    originalId: item.id.toString(), // Keep original ID for reference
-    title: item.title || item.name || "",
-    shortDescription: item.shortDescription || item.short_description || "",
-    slug: item.slug || "",
-    entity: entityType,
-    locale: item.locale || item.localizations?.[0]?.locale || "en", // Handle potential locale issues
-    highlightImage:
-      item.highlightImage?.url ||
-      item.highlight_image?.url ||
-      item.highlightImage ||
-      "",
-    oldPublishedAt: oldPublishedAtTimestamp,
-    createdAt: createdAtTimestamp,
-  };
-
-  // Handle industries based on entity type
-  if (entityType === "api::report.report") {
-    // Reports have single industry relation
-    if (item.industry) {
-      const industryName =
-        typeof item.industry === "string"
-          ? item.industry
-          : item.industry.name || item.industry.title || "";
-      doc.industries = industryName ? [industryName] : [];
-    } else {
-      doc.industries = [];
-    }
-  } else {
-    // Blogs and news have multiple industries
-    if (item.industries && Array.isArray(item.industries)) {
-      doc.industries = item.industries
-        .map((industry) =>
-          typeof industry === "string"
-            ? industry
-            : industry.name || industry.title || ""
-        )
-        .filter(Boolean);
-    } else {
-      doc.industries = [];
-    }
-  }
-
-  // Add geographies if available (only for reports)
-  if (item.geographies && Array.isArray(item.geographies)) {
-    doc.geographies = item.geographies
-      .map((geography) =>
-        typeof geography === "string"
-          ? geography
-          : geography.name || geography.title || ""
-      )
-      .filter(Boolean);
-  } else {
-    // For content types without geographies, set empty array
-    doc.geographies = [];
-  }
-
-  // Debug logging for blogs
-  if (entityType === "api::blog.blog") {
-    console.log(`🔍 Formatting blog ${item.id}:`, {
-      originalTitle: item.title?.substring(0, 50) + "...",
-      originalLocale: item.locale,
-      finalLocale: doc.locale,
-      industriesRaw: item.industries?.length || 0,
-      industriesFormatted: doc.industries?.length || 0,
-      hasHighlightImage: !!doc.highlightImage,
-      oldPublishedAt: oldPublishedAtTimestamp
-        ? new Date(oldPublishedAtTimestamp).toISOString()
-        : null,
-      uniqueId: doc.id,
-    });
-  }
-
-  return doc;
-};
-
-const syncAllContent = async () => {
-  const typesense = getClient();
+async function syncContentType(model, entityType, batchSize = 50) {
+  console.log(`\n🔄 Syncing ${entityType}...`);
 
   try {
-    // Initialize Typesense collection
-    const initSuccess = await initializeTypesense();
-    if (!initSuccess) {
-      console.error("Failed to initialize Typesense, aborting sync");
-      return;
+    // Get total count first
+    const total = await strapi.db.query(model).count({
+      filters: {
+        $or: [
+          { publishedAt: { $notNull: true } },
+          { published_at: { $notNull: true } },
+        ],
+      },
+    });
+
+    console.log(`📊 Found ${total} published ${entityType} items`);
+
+    if (total === 0) {
+      console.log(`⚠️ No published ${entityType} items found`);
+      return { synced: 0, failed: 0 };
     }
 
-    // Define content types to process with their specific relations
+    const typesense = getClient();
+    let synced = 0;
+    let failed = 0;
+
+    // Process in batches
+    for (let offset = 0; offset < total; offset += batchSize) {
+      try {
+        console.log(
+          `📦 Processing batch ${
+            Math.floor(offset / batchSize) + 1
+          }/${Math.ceil(total / batchSize)} (${offset + 1}-${Math.min(
+            offset + batchSize,
+            total
+          )})`
+        );
+
+        const items = await strapi.db.query(model).findMany({
+          offset,
+          limit: batchSize,
+          filters: {
+            $or: [
+              { publishedAt: { $notNull: true } },
+              { published_at: { $notNull: true } },
+            ],
+          },
+          populate: {
+            industries: { select: ["name"] },
+            industry: { select: ["name"] },
+            geographies: { select: ["name"] },
+            geography: { select: ["name"] },
+            highlightImage: {
+              select: ["url", "alternativeText", "width", "height"],
+            },
+            featuredImage: {
+              select: ["url", "alternativeText", "width", "height"],
+            },
+            author: { select: ["name", "username"] },
+            tags: { select: ["name"] },
+            source: { select: ["name"] },
+            category: { select: ["name"] },
+            reportType: { select: ["name"] },
+          },
+        });
+
+        if (items.length === 0) {
+          console.log("📭 No items in this batch");
+          continue;
+        }
+
+        // Prepare documents for indexing
+        const documents = [];
+        for (const item of items) {
+          try {
+            const doc = prepareDocumentForIndexing(item, entityType);
+            documents.push(doc);
+
+            // Log first few documents for debugging
+            if (documents.length <= 3 && offset === 0) {
+              console.log(`📝 Sample document ${documents.length}:`, {
+                id: doc.id,
+                originalId: doc.originalId,
+                title: doc.title?.substring(0, 50) + "...",
+                entity: doc.entity,
+                locale: doc.locale,
+                hasShortDescription: !!doc.shortDescription,
+                industriesCount: doc.industries?.length || 0,
+                geographiesCount: doc.geographies?.length || 0,
+              });
+            }
+          } catch (prepError) {
+            console.error(
+              `❌ Error preparing ${entityType} item ${item.id}:`,
+              prepError
+            );
+            failed++;
+          }
+        }
+
+        if (documents.length > 0) {
+          // Index batch to Typesense
+          const results = await typesense
+            .collections(COLLECTION_NAME)
+            .documents()
+            .import(documents, { action: "upsert" });
+
+          // Check results
+          const batchFailed = results.filter((r) => !r.success);
+          const batchSucceeded = results.filter((r) => r.success);
+
+          synced += batchSucceeded.length;
+          failed += batchFailed.length;
+
+          console.log(
+            `✅ Batch result: ${batchSucceeded.length} succeeded, ${batchFailed.length} failed`
+          );
+
+          if (batchFailed.length > 0) {
+            console.log("❌ Failed items:", batchFailed.slice(0, 3)); // Show first 3 failures
+          }
+        }
+      } catch (batchError) {
+        console.error(`❌ Batch processing error:`, batchError);
+        failed += batchSize; // Assume all items in batch failed
+      }
+    }
+
+    console.log(
+      `🎉 ${entityType} sync complete: ${synced} synced, ${failed} failed`
+    );
+    return { synced, failed };
+  } catch (error) {
+    console.error(`❌ Error syncing ${entityType}:`, error);
+    throw error;
+  }
+}
+
+async function syncAllContent() {
+  console.log("🚀 Starting full content sync...");
+  const startTime = Date.now();
+
+  try {
+    // Create collection first
+    await createCollection();
+
+    // Wait for collection to be ready
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    const results = {};
+
+    // Sync each content type
     const contentTypes = [
+      { model: "api::blog.blog", entity: "api::blog.blog", name: "Blogs" },
       {
         model: "api::report.report",
         entity: "api::report.report",
-        relations: ["industry", "geographies", "highlightImage"], // Reports have single industry
-      },
-      {
-        model: "api::blog.blog",
-        entity: "api::blog.blog",
-        relations: ["industries", "highlightImage"], // Blogs have multiple industries
+        name: "Reports",
       },
       {
         model: "api::news-article.news-article",
         entity: "api::news-article.news-article",
-        relations: ["industries", "highlightImage"], // News have multiple industries
+        name: "News",
       },
     ];
 
-    // First, let's check what content we actually have
-    console.log("\n=== CONTENT AUDIT ===");
-    for (const { model } of contentTypes) {
+    for (const contentType of contentTypes) {
       try {
-        const count = await strapi.db.query(model).count();
-        console.log(`${model}: ${count} items`);
-
-        if (count > 0) {
-          // Check locales breakdown
-          const locales = await strapi.plugin("i18n").service("locales").find();
-          for (const locale of locales) {
-            const localeCount = await strapi.db.query(model).count({
-              filters: { locale: locale.code },
-            });
-            if (localeCount > 0) {
-              console.log(`  - ${locale.code}: ${localeCount} items`);
-            }
-          }
-        }
-      } catch (error) {
-        console.log(`${model}: Error checking - ${error.message}`);
+        results[contentType.name] = await syncContentType(
+          contentType.model,
+          contentType.entity
+        );
+      } catch (typeError) {
+        console.error(`❌ Failed to sync ${contentType.name}:`, typeError);
+        results[contentType.name] = {
+          synced: 0,
+          failed: 0,
+          error: typeError.message,
+        };
       }
     }
-    console.log("=== END CONTENT AUDIT ===\n");
 
-    let totalProcessed = 0;
-    const BATCH_SIZE = 50;
+    // Verify final counts
+    console.log("\n🔍 Verifying sync results...");
+    const typesense = getClient();
 
-    // Process each content type
-    for (const { model, entity, relations } of contentTypes) {
-      console.log(`\n=== Processing ${model} ===`);
-
-      // Get total count
-      const totalCount = await strapi.db.query(model).count();
-      console.log(`Total ${model} items: ${totalCount}`);
-
-      if (totalCount === 0) {
-        console.log(`No ${model} items found, skipping...`);
-        continue;
-      }
-
-      // Build populate object
-      const populateObj = {};
-      relations.forEach((relation) => {
-        if (relation === "highlightImage") {
-          populateObj[relation] = {
-            select: ["url", "alternativeText"],
-          };
-        } else {
-          populateObj[relation] = {
-            select: ["name"],
-          };
-        }
-      });
-
-      let processedCount = 0;
-
-      // Simple pagination - process all items regardless of locale
-      for (let offset = 0; offset < totalCount; offset += BATCH_SIZE) {
-        try {
-          console.log(
-            `Processing ${model} batch: ${offset + 1}-${Math.min(
-              offset + BATCH_SIZE,
-              totalCount
-            )} of ${totalCount}`
-          );
-
-          const items = await strapi.db.query(model).findMany({
-            populate: populateObj,
-            limit: BATCH_SIZE,
-            offset,
-            orderBy: { id: "asc" }, // Ensure consistent ordering
-          });
-
-          if (items.length === 0) {
-            console.log(
-              `No more items found for ${model} at offset ${offset}, ending...`
-            );
-            break;
-          }
-
-          // Format and prepare documents
-          const documents = [];
-          const errors = [];
-
-          items.forEach((item, index) => {
-            try {
-              const doc = formatDocument(item, entity);
-              documents.push(doc);
-
-              // Extra logging for blogs
-              if (entity === "api::blog.blog" && index < 3) {
-                console.log(`📝 Formatted blog ${index + 1}:`, {
-                  id: doc.id,
-                  originalId: doc.originalId,
-                  title: doc.title.substring(0, 50) + "...",
-                  locale: doc.locale,
-                  industries: doc.industries,
-                  hasHighlightImage: !!doc.highlightImage,
-                });
-              }
-            } catch (formatError) {
-              console.error(
-                `❌ Error formatting document ${item.id}:`,
-                formatError
-              );
-              errors.push({ id: item.id, error: formatError.message });
-            }
-          });
-
-          if (errors.length > 0) {
-            console.log(
-              `⚠️ Formatting errors for ${model}:`,
-              errors.slice(0, 5)
-            ); // Show first 5 errors
-          }
-
-          if (documents.length === 0) {
-            console.log(
-              `No valid documents to index for this batch of ${model}`
-            );
-            continue;
-          }
-
-          // Index documents
-          try {
-            await typesense
-              .collections(COLLECTION_NAME)
-              .documents()
-              .import(documents, { action: "upsert" });
-
-            processedCount += documents.length;
-            totalProcessed += documents.length;
-            console.log(
-              `✅ Indexed ${documents.length} ${model} documents (${processedCount}/${totalCount} total for this type)`
-            );
-          } catch (indexError) {
-            console.error(
-              `❌ Error indexing batch of ${model} documents:`,
-              indexError
-            );
-          }
-
-          // Small delay to prevent overwhelming the system
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        } catch (error) {
-          console.error(
-            `Error processing batch for ${model} at offset ${offset}:`,
-            error
-          );
-          continue;
-        }
-      }
-
-      console.log(
-        `=== Completed ${model}: ${processedCount} items processed ===`
-      );
-    }
-
-    console.log(`\n=== SYNC COMPLETE ===`);
-    console.log(`Successfully synced ${totalProcessed} documents to Typesense`);
-
-    // Run immediate verification
-    await verifySyncResults();
-
-    // Get final stats
     try {
-      const typesense = getClient();
-      const stats = await typesense
+      const finalCount = await typesense
         .collections(COLLECTION_NAME)
         .documents()
         .search({
           q: "*",
+          query_by: "title",
           per_page: 0,
-          facet_by: "entity,locale",
+          facet_by: "entity",
         });
 
-      console.log(`\nFinal Typesense Statistics:`);
-      console.log(`Total documents: ${stats.found}`);
-      if (stats.facet_counts) {
-        stats.facet_counts.forEach((facet) => {
-          console.log(`\n${facet.field_name}:`);
-          facet.counts.forEach((count) => {
-            console.log(`  ${count.value}: ${count.count} documents`);
-          });
-        });
-      }
-    } catch (statsError) {
-      console.log("Could not fetch final stats:", statsError.message);
+      console.log(`📊 Total documents in search index: ${finalCount.found}`);
+      console.log(
+        "📊 By entity type:",
+        finalCount.facet_counts?.[0]?.counts || []
+      );
+    } catch (verifyError) {
+      console.error("❌ Error verifying sync:", verifyError);
     }
+
+    const duration = Math.round((Date.now() - startTime) / 1000);
+    console.log(`\n🎉 Full sync completed in ${duration} seconds`);
+    console.log("📋 Results:", results);
+
+    return results;
   } catch (error) {
-    console.error("Error syncing content to Typesense:", error);
+    console.error("❌ Full sync failed:", error);
     throw error;
   }
-};
+}
 
-// Single document sync for lifecycle hooks
-const syncSingleItem = async (item, entityType) => {
-  if (!item) return;
+// Lifecycle hooks for real-time sync
+async function handleContentUpdate(event) {
+  const { model, entry } = event.params;
 
-  const typesense = getClient();
-  try {
-    // For single item sync, we need to populate relations separately if needed
-    let populatedItem = item;
-
-    // Determine which relations this entity type should have
-    const entityRelations = getEntityRelations(entityType);
-
-    // If the item doesn't have relations populated, fetch it
-    const needsPopulation = entityRelations.some((relation) => !item[relation]);
-
-    if (needsPopulation && item.id) {
-      try {
-        const populateObj = {};
-        entityRelations.forEach((relation) => {
-          populateObj[relation] = {
-            select: ["name"],
-          };
-        });
-
-        populatedItem = await strapi.db.query(entityType).findOne({
-          where: { id: item.id },
-          populate: populateObj,
-        });
-      } catch (populateError) {
-        console.warn(
-          `Could not populate relations for ${entityType} ${item.id}:`,
-          populateError
-        );
-        // Continue with original item
-      }
-    }
-
-    const document = formatDocument(populatedItem, entityType);
-
-    // Upsert document (create or update)
-    await typesense.collections(COLLECTION_NAME).documents().upsert(document);
-
-    console.log(`Synced item ${entityType} - ${item.id} to Typesense`);
-  } catch (error) {
-    console.error(
-      `Error syncing item ${entityType} - ${item.id} to Typesense:`,
-      error
-    );
+  // Only sync published content
+  if (!entry.publishedAt && !entry.published_at) {
+    console.log(`⏭️ Skipping unpublished ${model} item ${entry.id}`);
+    return;
   }
-};
 
-// Delete single document
-const deleteSingleItem = async (item, entityType) => {
-  if (!item || !item.id) return;
-
-  const typesense = getClient();
-  try {
-    await typesense
-      .collections(COLLECTION_NAME)
-      .documents(String(item.id))
-      .delete();
-
-    console.log(`Deleted item ${entityType} - ${item.id} from Typesense`);
-  } catch (error) {
-    // Ignore 404 errors (document might not exist)
-    if (error.httpStatus !== 404) {
-      console.error(
-        `Error deleting item ${entityType} - ${item.id} from Typesense:`,
-        error
-      );
-    }
-  }
-};
-
-// Helper function to get relations for each entity type
-const getEntityRelations = (entityType) => {
-  switch (entityType) {
-    case "api::report.report":
-      return ["industry", "geographies", "highlightImage"]; // Single industry for reports
-    case "api::blog.blog":
-    case "api::news-article.news-article":
-      return ["industries", "highlightImage"]; // Multiple industries for blogs/news
-    default:
-      return ["industries", "highlightImage"]; // Default fallback
-  }
-};
-
-// Post-sync verification function
-const verifySyncResults = async () => {
-  console.log(`\n=== POST-SYNC VERIFICATION ===`);
+  console.log(`🔄 Syncing updated ${model} item ${entry.id}`);
 
   try {
     const typesense = getClient();
 
-    // Test 1: Count all documents by entity
-    const allDocsSearch = await typesense
-      .collections(COLLECTION_NAME)
-      .documents()
-      .search({
-        q: "*",
-        per_page: 0,
-        facet_by: "entity,locale",
-      });
-
-    console.log(`📊 Total documents indexed: ${allDocsSearch.found}`);
-
-    if (allDocsSearch.facet_counts) {
-      allDocsSearch.facet_counts.forEach((facet) => {
-        console.log(`\n${facet.field_name.toUpperCase()}:`);
-        facet.counts.slice(0, 10).forEach((count) => {
-          console.log(`  ${count.value}: ${count.count} documents`);
-        });
-      });
-    }
-
-    // Test 2: Specific blog verification
-    const blogTest = await typesense
-      .collections(COLLECTION_NAME)
-      .documents()
-      .search({
-        q: "*",
-        query_by: "title",
-        filter_by: "entity:=api::blog.blog && locale:=en",
-        per_page: 5,
-      });
-
-    console.log(`\n📝 BLOG VERIFICATION:`);
-    console.log(`Found ${blogTest.found} blogs in English`);
-
-    if (blogTest.hits.length > 0) {
-      console.log(`Sample blogs:`);
-      blogTest.hits.forEach((hit, index) => {
-        console.log(
-          `  ${index + 1}. "${hit.document.title}" (ID: ${
-            hit.document.id
-          }, originalId: ${hit.document.originalId})`
-        );
-      });
-    } else {
-      console.log(`❌ NO BLOGS FOUND - This indicates a problem!`);
-    }
-
-    // Test 3: Sample search that should include blogs
-    const sampleSearch = await typesense
-      .collections(COLLECTION_NAME)
-      .documents()
-      .search({
-        q: "*",
-        query_by: "title,shortDescription",
-        filter_by: "locale:=en",
-        per_page: 20,
-        sort_by: "oldPublishedAt:desc",
-      });
-
-    const entityBreakdown = {};
-    sampleSearch.hits.forEach((hit) => {
-      const entity = hit.document.entity;
-      entityBreakdown[entity] = (entityBreakdown[entity] || 0) + 1;
+    // Get full item with relations
+    const fullItem = await strapi.db.query(model).findOne({
+      where: { id: entry.id },
+      populate: {
+        industries: { select: ["name"] },
+        industry: { select: ["name"] },
+        geographies: { select: ["name"] },
+        geography: { select: ["name"] },
+        highlightImage: {
+          select: ["url", "alternativeText", "width", "height"],
+        },
+        featuredImage: {
+          select: ["url", "alternativeText", "width", "height"],
+        },
+        author: { select: ["name", "username"] },
+        tags: { select: ["name"] },
+        source: { select: ["name"] },
+        category: { select: ["name"] },
+        reportType: { select: ["name"] },
+      },
     });
 
-    console.log(`\n🔍 SAMPLE SEARCH RESULTS (top 20 by date):`);
-    Object.entries(entityBreakdown).forEach(([entity, count]) => {
-      console.log(`  ${entity}: ${count} results`);
-    });
-
-    if (entityBreakdown["api::blog.blog"]) {
-      console.log(`✅ Blogs appear in search results!`);
-    } else {
-      console.log(`❌ Blogs NOT appearing in search results!`);
+    if (!fullItem) {
+      console.log(`⚠️ Item ${entry.id} not found for sync`);
+      return;
     }
+
+    const doc = prepareDocumentForIndexing(fullItem, model);
+
+    await typesense.collections(COLLECTION_NAME).documents().upsert(doc);
+
+    console.log(`✅ Successfully synced ${model} item ${entry.id}`);
   } catch (error) {
-    console.error(`❌ Verification failed:`, error);
+    console.error(`❌ Error syncing ${model} item ${entry.id}:`, error);
   }
+}
 
-  console.log(`=== END VERIFICATION ===\n`);
-};
+async function handleContentDelete(event) {
+  const { model, entry } = event.params;
+
+  console.log(`🗑️ Removing ${model} item ${entry.id} from search`);
+
+  try {
+    const typesense = getClient();
+    const documentId = `${entry.id}_${entry.locale || "en"}`;
+
+    await typesense.collections(COLLECTION_NAME).documents(documentId).delete();
+
+    console.log(`✅ Successfully removed ${model} item ${entry.id}`);
+  } catch (error) {
+    if (error.httpStatus !== 404) {
+      console.error(`❌ Error removing ${model} item ${entry.id}:`, error);
+    }
+  }
+}
 
 module.exports = {
-  initializeTypesense,
   syncAllContent,
-  syncSingleItem,
-  deleteSingleItem,
-  getEntityRelations,
+  handleContentUpdate,
+  handleContentDelete,
+  syncContentType,
+  createCollection,
+  COLLECTION_NAME,
+  COLLECTION_SCHEMA,
 };

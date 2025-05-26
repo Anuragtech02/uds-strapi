@@ -197,6 +197,8 @@ module.exports = {
   },
 
   // Search API for frontend
+  // Fixed search method with better error handling and debugging
+
   async search(ctx) {
     try {
       const {
@@ -206,19 +208,38 @@ module.exports = {
         page = 1,
         pageSize = 10,
         sort = "oldPublishedAt:desc",
-        industries, // Add industries filter
-        geographies, // Add geographies filter
+        industries,
+        geographies,
       } = ctx.query;
 
       const minTermLength = 2;
-      // For empty searches, we still want to return results but sort by date
       const isEmptySearch = !term || term.length < minTermLength;
       const typesense = getClient();
 
-      // Build filter based on query parameters
+      // Determine the correct collection name
+      let collectionName = "search_content_v2"; // Your logs show this collection exists
+
+      // Verify collection exists, fallback if needed
+      try {
+        await typesense.collections(collectionName).retrieve();
+      } catch (error) {
+        console.log(
+          `Collection ${collectionName} not found, trying fallback...`
+        );
+        collectionName = "content";
+        try {
+          await typesense.collections(collectionName).retrieve();
+        } catch (fallbackError) {
+          return ctx.badRequest("No valid search collection found");
+        }
+      }
+
+      console.log(`🔍 Using collection: ${collectionName}`);
+
+      // Build filter with proper escaping and validation
       let filterBy = `locale:=${locale}`;
 
-      // If tab is specified, filter by entity type
+      // Tab-based entity filtering
       if (tab) {
         let entityType;
         switch (tab.toLowerCase()) {
@@ -237,7 +258,7 @@ module.exports = {
         }
       }
 
-      // Add industries filter if provided
+      // Industries filter
       if (industries) {
         const industriesArray = industries.split(",").filter(Boolean);
         if (industriesArray.length > 0) {
@@ -248,7 +269,7 @@ module.exports = {
         }
       }
 
-      // Add geographies filter if provided (only affects reports since blogs/news don't have geographies)
+      // Geographies filter
       if (geographies) {
         const geographiesArray = geographies.split(",").filter(Boolean);
         if (geographiesArray.length > 0) {
@@ -259,14 +280,14 @@ module.exports = {
         }
       }
 
-      // Parse and validate sort parameter
+      // Handle sort parameter more robustly
       let sortBy = "oldPublishedAt:desc"; // Default
       if (sort) {
-        // Handle different sort options from frontend
         switch (sort.toLowerCase()) {
           case "relevance":
-            // For relevance, we'll handle this in the search params logic below
-            sortBy = "oldPublishedAt:desc"; // Fallback for empty searches
+            sortBy = isEmptySearch
+              ? "oldPublishedAt:desc"
+              : "_text_match:desc,oldPublishedAt:desc";
             break;
           case "date_desc":
           case "oldpublishedat:desc":
@@ -283,46 +304,49 @@ module.exports = {
             sortBy = "createdAt:asc";
             break;
           default:
-            // If it's already in the correct format (field:direction), use it
             if (sort.match(/^[a-zA-Z_]+:(asc|desc)$/)) {
               sortBy = sort;
-            } else {
-              sortBy = "oldPublishedAt:desc"; // Fallback
             }
         }
       }
 
-      // Search parameters
+      // Build search parameters
       const searchParams = {
-        q: isEmptySearch ? "*" : term, // Use wildcard for empty searches
+        q: isEmptySearch ? "*" : term,
         query_by: "title,shortDescription",
         filter_by: filterBy,
-        per_page: parseInt(pageSize, 10),
-        page: parseInt(page, 10),
+        per_page: Math.min(parseInt(pageSize, 10), 100), // Limit max page size
+        page: Math.max(parseInt(page, 10), 1), // Ensure page is at least 1
         sort_by: sortBy,
       };
 
-      // If we're doing a real search (non-empty term), add text match sorting
-      if (!isEmptySearch && sort === "relevance") {
-        searchParams.sort_by = `_text_match:desc,${sortBy}`;
+      // Add additional parameters for better search experience
+      if (!isEmptySearch) {
+        searchParams.typo_tokens_threshold = 1; // Allow some typos
+        searchParams.drop_tokens_threshold = 1; // Allow dropping tokens for better results
       }
 
-      console.log("Typesense search params:", searchParams); // Debug log
+      console.log("🔍 Search params:", JSON.stringify(searchParams, null, 2));
 
-      // Execute search
+      // Execute main search
       const searchResults = await typesense
-        .collections("content")
+        .collections(collectionName)
         .documents()
         .search(searchParams);
 
-      console.log("Typesense search results:", {
-        found: searchResults.found,
-        hits: searchResults.hits.length,
-        query: searchParams.q,
-        filterBy: searchParams.filter_by,
-      }); // Debug log
+      console.log(
+        `📊 Search results: ${searchResults.found} found, ${searchResults.hits.length} returned`
+      );
 
-      // Count items by entity type for the current results
+      // Debug: Log entity breakdown in results
+      const entityBreakdown = {};
+      searchResults.hits.forEach((hit) => {
+        const entity = hit.document.entity;
+        entityBreakdown[entity] = (entityBreakdown[entity] || 0) + 1;
+      });
+      console.log("📊 Entity breakdown in results:", entityBreakdown);
+
+      // Initialize counts
       const counts = {
         all: searchResults.found,
         "api::report.report": 0,
@@ -338,49 +362,93 @@ module.exports = {
         }
       });
 
-      // If no tab filter is applied, get accurate counts for all entity types
+      // Get accurate counts for all entity types if no tab filter
       if (!tab) {
-        try {
-          // Get counts for each entity type separately
-          const entityTypes = [
-            { key: "api::report.report", tab: "reports" },
-            { key: "api::blog.blog", tab: "blogs" },
-            { key: "api::news-article.news-article", tab: "news" },
-          ];
+        const entityTypes = [
+          { key: "api::report.report", tab: "reports" },
+          { key: "api::blog.blog", tab: "blogs" },
+          { key: "api::news-article.news-article", tab: "news" },
+        ];
 
-          for (const entityType of entityTypes) {
+        for (const entityType of entityTypes) {
+          try {
             const countParams = {
               q: isEmptySearch ? "*" : term,
               query_by: "title,shortDescription",
-              filter_by: `locale:=${locale} && entity:=${entityType.key}`, // Use base filter without tab-specific filtering
-              per_page: 0, // We only want the count
+              filter_by: `locale:=${locale} && entity:=${entityType.key}`,
+              per_page: 0,
             };
 
+            // Add industries and geographies filters for accurate counts
+            if (industries) {
+              const industriesArray = industries.split(",").filter(Boolean);
+              if (industriesArray.length > 0) {
+                const industriesFilter = industriesArray
+                  .map((industry) => `industries:=${industry.trim()}`)
+                  .join(" || ");
+                countParams.filter_by += ` && (${industriesFilter})`;
+              }
+            }
+
+            if (geographies && entityType.key === "api::report.report") {
+              const geographiesArray = geographies.split(",").filter(Boolean);
+              if (geographiesArray.length > 0) {
+                const geographiesFilter = geographiesArray
+                  .map((geography) => `geographies:=${geography.trim()}`)
+                  .join(" || ");
+                countParams.filter_by += ` && (${geographiesFilter})`;
+              }
+            }
+
             const countResult = await typesense
-              .collections("content")
+              .collections(collectionName)
               .documents()
               .search(countParams);
 
             counts[entityType.key] = countResult.found;
+
+            console.log(`📊 ${entityType.tab} count: ${countResult.found}`);
+          } catch (countError) {
+            console.error(
+              `Error getting count for ${entityType.key}:`,
+              countError
+            );
           }
-        } catch (countError) {
-          console.error("Error getting entity counts:", countError);
-          // Fall back to the counts from the main search
         }
       }
 
-      // Format response to match your expected format
+      // Format response
       const formattedResults = {
         data: searchResults.hits.map((hit) => {
           const doc = hit.document;
 
-          // Format oldPublishedAt as ISO string if it exists
-          const oldPublishedAt = doc.oldPublishedAt
-            ? new Date(parseInt(doc.oldPublishedAt)).toISOString()
-            : null;
+          // Handle oldPublishedAt conversion more safely
+          let oldPublishedAt = null;
+          if (doc.oldPublishedAt) {
+            try {
+              // Check if it's already a valid date string
+              if (
+                typeof doc.oldPublishedAt === "string" &&
+                doc.oldPublishedAt.includes("T")
+              ) {
+                oldPublishedAt = doc.oldPublishedAt;
+              } else {
+                // Convert timestamp to ISO string
+                const timestamp = parseInt(doc.oldPublishedAt);
+                if (!isNaN(timestamp)) {
+                  oldPublishedAt = new Date(timestamp).toISOString();
+                }
+              }
+            } catch (dateError) {
+              console.warn(
+                `Error parsing oldPublishedAt for doc ${doc.id}:`,
+                dateError
+              );
+            }
+          }
 
           return {
-            id: doc.originalId || doc.id, // Use originalId for frontend compatibility
+            id: doc.originalId || doc.id,
             title: doc.title,
             shortDescription: doc.shortDescription,
             slug: doc.slug,
@@ -402,6 +470,29 @@ module.exports = {
           },
         },
       };
+
+      // Debug log for blog-specific issues
+      if (tab === "blogs" && formattedResults.data.length === 0) {
+        console.log("🚨 BLOG DEBUG: No blogs returned");
+        console.log("🚨 Filter used:", filterBy);
+        console.log("🚨 Query used:", searchParams.q);
+
+        // Try a simple blog test
+        try {
+          const simpleTest = await typesense
+            .collections(collectionName)
+            .documents()
+            .search({
+              q: "*",
+              query_by: "title",
+              filter_by: `entity:=api::blog.blog`,
+              per_page: 5,
+            });
+          console.log("🚨 Simple blog test found:", simpleTest.found);
+        } catch (testError) {
+          console.log("🚨 Simple blog test failed:", testError.message);
+        }
+      }
 
       return formattedResults;
     } catch (error) {
@@ -812,6 +903,354 @@ module.exports = {
     } catch (error) {
       console.error("Locale debug error:", error);
       return ctx.badRequest("Locale debug failed: " + error.message);
+    }
+  },
+  // Add this comprehensive debug method to your search controller
+
+  async debugCollectionIssues(ctx) {
+    try {
+      const { locale = "en", q = "*" } = ctx.query;
+      const typesense = getClient();
+
+      console.log(
+        `🔍 COMPREHENSIVE DEBUG for query: "${q}" in locale: ${locale}`
+      );
+
+      // Step 1: Check which collections exist
+      const collections = await typesense.collections().retrieve();
+      console.log(
+        "📋 Available collections:",
+        collections.map((c) => c.name)
+      );
+
+      // Step 2: Check the actual collection being used
+      const targetCollectionName = "search_content_v2"; // Based on your logs
+      let collectionExists = false;
+      let collection = null;
+
+      try {
+        collection = await typesense
+          .collections(targetCollectionName)
+          .retrieve();
+        collectionExists = true;
+        console.log(
+          `✅ Collection '${targetCollectionName}' exists with schema:`,
+          collection.fields
+        );
+      } catch (error) {
+        console.log(
+          `❌ Collection '${targetCollectionName}' not found:`,
+          error.message
+        );
+
+        // Try fallback collection name
+        try {
+          const fallbackName = "content";
+          collection = await typesense.collections(fallbackName).retrieve();
+          console.log(`✅ Found fallback collection '${fallbackName}'`);
+          targetCollectionName = fallbackName;
+          collectionExists = true;
+        } catch (fallbackError) {
+          console.log(`❌ Fallback collection 'content' also not found`);
+        }
+      }
+
+      if (!collectionExists) {
+        return ctx.badRequest("No valid collection found");
+      }
+
+      // Step 3: Check total documents and entity distribution
+      const totalDocsSearch = await typesense
+        .collections(targetCollectionName)
+        .documents()
+        .search({
+          q: "*",
+          query_by:
+            collection.fields.filter(
+              (f) => f.type === "string" && f.facet !== true
+            )[0]?.name || "title",
+          per_page: 0,
+          facet_by: "entity",
+        });
+
+      console.log(`📊 Total documents: ${totalDocsSearch.found}`);
+      console.log(
+        `📊 Entity distribution:`,
+        totalDocsSearch.facet_counts?.[0]?.counts || []
+      );
+
+      // Step 4: Specific blog analysis
+      const blogTests = {};
+
+      // Test 1: Direct blog search
+      try {
+        const directBlogSearch = await typesense
+          .collections(targetCollectionName)
+          .documents()
+          .search({
+            q: "*",
+            query_by: "title",
+            filter_by: `entity:=api::blog.blog`,
+            per_page: 10,
+          });
+
+        blogTests.directBlogSearch = {
+          found: directBlogSearch.found,
+          samples: directBlogSearch.hits.slice(0, 3).map((hit) => ({
+            id: hit.document.id,
+            originalId: hit.document.originalId,
+            title: hit.document.title,
+            locale: hit.document.locale,
+            entity: hit.document.entity,
+          })),
+        };
+      } catch (error) {
+        blogTests.directBlogSearch = { error: error.message };
+      }
+
+      // Test 2: Blog search with locale filter
+      try {
+        const blogLocaleSearch = await typesense
+          .collections(targetCollectionName)
+          .documents()
+          .search({
+            q: "*",
+            query_by: "title",
+            filter_by: `locale:=${locale} && entity:=api::blog.blog`,
+            per_page: 10,
+          });
+
+        blogTests.blogLocaleSearch = {
+          found: blogLocaleSearch.found,
+          samples: blogLocaleSearch.hits.slice(0, 3).map((hit) => ({
+            id: hit.document.id,
+            originalId: hit.document.originalId,
+            title: hit.document.title,
+            locale: hit.document.locale,
+            entity: hit.document.entity,
+          })),
+        };
+      } catch (error) {
+        blogTests.blogLocaleSearch = { error: error.message };
+      }
+
+      // Test 3: Replicate your main search exactly
+      try {
+        const mainSearchReplication = await typesense
+          .collections(targetCollectionName)
+          .documents()
+          .search({
+            q: q === "*" ? "*" : q,
+            query_by: "title,shortDescription",
+            filter_by: `locale:=${locale}`,
+            per_page: 50,
+            sort_by: "oldPublishedAt:desc",
+          });
+
+        // Count blogs in results
+        let blogCount = 0;
+        const blogSamples = [];
+        const entityCounts = {};
+
+        mainSearchReplication.hits.forEach((hit) => {
+          const entity = hit.document.entity;
+          entityCounts[entity] = (entityCounts[entity] || 0) + 1;
+
+          if (entity === "api::blog.blog") {
+            blogCount++;
+            if (blogSamples.length < 3) {
+              blogSamples.push({
+                id: hit.document.id,
+                originalId: hit.document.originalId,
+                title: hit.document.title,
+                locale: hit.document.locale,
+                oldPublishedAt: hit.document.oldPublishedAt,
+              });
+            }
+          }
+        });
+
+        blogTests.mainSearchReplication = {
+          totalFound: mainSearchReplication.found,
+          blogCount: blogCount,
+          entityBreakdown: entityCounts,
+          blogSamples: blogSamples,
+        };
+      } catch (error) {
+        blogTests.mainSearchReplication = { error: error.message };
+      }
+
+      // Test 4: Check if blogs have the required fields
+      try {
+        const blogFieldCheck = await typesense
+          .collections(targetCollectionName)
+          .documents()
+          .search({
+            q: "*",
+            query_by: "title",
+            filter_by: `entity:=api::blog.blog`,
+            per_page: 5,
+          });
+
+        blogTests.fieldAnalysis = blogFieldCheck.hits.map((hit) => {
+          const doc = hit.document;
+          return {
+            id: doc.id,
+            hasTitle: !!doc.title,
+            hasShortDescription: !!doc.shortDescription,
+            hasLocale: !!doc.locale,
+            hasOldPublishedAt: !!doc.oldPublishedAt,
+            oldPublishedAtType: typeof doc.oldPublishedAt,
+            oldPublishedAtValue: doc.oldPublishedAt,
+            allFields: Object.keys(doc),
+          };
+        });
+      } catch (error) {
+        blogTests.fieldAnalysis = { error: error.message };
+      }
+
+      // Test 5: Check sort field format
+      try {
+        const sortTest = await typesense
+          .collections(targetCollectionName)
+          .documents()
+          .search({
+            q: "*",
+            query_by: "title",
+            filter_by: `locale:=${locale} && entity:=api::blog.blog`,
+            per_page: 5,
+            sort_by: "oldPublishedAt:desc",
+          });
+
+        blogTests.sortTest = {
+          found: sortTest.found,
+          samples: sortTest.hits.map((hit) => ({
+            id: hit.document.id,
+            oldPublishedAt: hit.document.oldPublishedAt,
+            title: hit.document.title,
+          })),
+        };
+      } catch (error) {
+        blogTests.sortTest = { error: error.message };
+      }
+
+      return {
+        collectionName: targetCollectionName,
+        collectionExists: collectionExists,
+        totalDocuments: totalDocsSearch.found,
+        entityDistribution: totalDocsSearch.facet_counts?.[0]?.counts || [],
+        blogTests: blogTests,
+        recommendations: [
+          blogTests.directBlogSearch?.found === 0
+            ? "❌ No blogs found - check indexing"
+            : "✅ Blogs are indexed",
+          blogTests.blogLocaleSearch?.found === 0
+            ? "❌ No blogs in specified locale"
+            : "✅ Blogs exist in locale",
+          blogTests.mainSearchReplication?.blogCount === 0
+            ? "❌ Blogs not appearing in main search - check sort/filter logic"
+            : "✅ Blogs appear in main search",
+        ],
+      };
+    } catch (error) {
+      console.error("Comprehensive debug error:", error);
+      return ctx.badRequest("Debug failed: " + error.message);
+    }
+  },
+
+  // Also add this method to test the exact search parameters your frontend uses
+  async testFrontendSearch(ctx) {
+    try {
+      const typesense = getClient();
+
+      // Test the exact parameters that would come from your frontend
+      const testCases = [
+        {
+          name: "Empty search with blogs tab",
+          params: {
+            q: "*",
+            query_by: "title,shortDescription",
+            filter_by: "locale:=en && entity:=api::blog.blog",
+            per_page: 10,
+            page: 1,
+            sort_by: "oldPublishedAt:desc",
+          },
+        },
+        {
+          name: "Search 'india' with blogs tab",
+          params: {
+            q: "india",
+            query_by: "title,shortDescription",
+            filter_by: "locale:=en && entity:=api::blog.blog",
+            per_page: 10,
+            page: 1,
+            sort_by: "_text_match:desc,oldPublishedAt:desc",
+          },
+        },
+        {
+          name: "Empty search all content",
+          params: {
+            q: "*",
+            query_by: "title,shortDescription",
+            filter_by: "locale:=en",
+            per_page: 10,
+            page: 1,
+            sort_by: "oldPublishedAt:desc",
+          },
+        },
+      ];
+
+      const results = {};
+
+      for (const testCase of testCases) {
+        try {
+          console.log(`🧪 Testing: ${testCase.name}`);
+          console.log(`📋 Params:`, testCase.params);
+
+          // Try with search_content_v2 first
+          let searchResult;
+          try {
+            searchResult = await typesense
+              .collections("search_content_v2")
+              .documents()
+              .search(testCase.params);
+          } catch (error) {
+            // Fallback to content collection
+            searchResult = await typesense
+              .collections("content")
+              .documents()
+              .search(testCase.params);
+          }
+
+          const entityCounts = {};
+          searchResult.hits.forEach((hit) => {
+            const entity = hit.document.entity;
+            entityCounts[entity] = (entityCounts[entity] || 0) + 1;
+          });
+
+          results[testCase.name] = {
+            totalFound: searchResult.found,
+            returned: searchResult.hits.length,
+            entityBreakdown: entityCounts,
+            firstThreeResults: searchResult.hits.slice(0, 3).map((hit) => ({
+              id: hit.document.id,
+              title: hit.document.title?.substring(0, 60) + "...",
+              entity: hit.document.entity,
+              locale: hit.document.locale,
+            })),
+          };
+        } catch (error) {
+          results[testCase.name] = { error: error.message };
+        }
+      }
+
+      return {
+        timestamp: new Date().toISOString(),
+        testResults: results,
+      };
+    } catch (error) {
+      console.error("Frontend search test error:", error);
+      return ctx.badRequest("Frontend search test failed: " + error.message);
     }
   },
 };
