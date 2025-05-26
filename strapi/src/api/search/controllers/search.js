@@ -1,5 +1,8 @@
 "use strict";
-const { syncAllContent } = require("../../../services/search-sync");
+const {
+  syncAllContent,
+  syncContentType,
+} = require("../../../services/search-sync");
 const { getClient } = require("../../../services/typesense");
 
 module.exports = {
