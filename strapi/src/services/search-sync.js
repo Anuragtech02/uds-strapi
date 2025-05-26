@@ -84,7 +84,7 @@ async function syncContentType(model, entityType, batchSize = 50) {
   try {
     // STEP 1: Get all published content IDs first (without any populate)
     const publishedItems = await strapi.db.query(model).findMany({
-      select: ["id", "locale"], // Only get IDs and locale
+      select: ["id", "locale"],
       filters: {
         $or: [
           { publishedAt: { $notNull: true } },
