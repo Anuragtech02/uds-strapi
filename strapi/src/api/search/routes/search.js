@@ -87,7 +87,7 @@ module.exports = {
       method: "POST",
       path: "/search/test-main-sync-blogs",
       handler: "search.testMainSyncBlogsOnly",
-      config: { auth: { scope: ["admin"] } },
+      config: { auth: false },
     },
     {
       method: "GET",
