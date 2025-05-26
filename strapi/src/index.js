@@ -148,29 +148,74 @@ module.exports = {
           models: [model],
 
           afterCreate: async (event) => {
-            console.log(`📝 ${model} created: ${event.result.id}`);
-            await handleContentUpdate(event);
+            try {
+              console.log(
+                `📝 ${model} created: ${event.result?.id || "unknown"}`
+              );
+              await handleContentUpdate(event);
+            } catch (error) {
+              console.error(
+                `❌ Error in afterCreate hook for ${model}:`,
+                error
+              );
+            }
           },
 
           afterUpdate: async (event) => {
-            console.log(`✏️ ${model} updated: ${event.result.id}`);
-            await handleContentUpdate(event);
+            try {
+              console.log(
+                `✏️ ${model} updated: ${event.result?.id || "unknown"}`
+              );
+              await handleContentUpdate(event);
+            } catch (error) {
+              console.error(
+                `❌ Error in afterUpdate hook for ${model}:`,
+                error
+              );
+            }
           },
 
           afterDelete: async (event) => {
-            console.log(`🗑️ ${model} deleted: ${event.result.id}`);
-            await handleContentDelete(event);
+            try {
+              console.log(
+                `🗑️ ${model} deleted: ${event.result?.id || "unknown"}`
+              );
+              await handleContentDelete(event);
+            } catch (error) {
+              console.error(
+                `❌ Error in afterDelete hook for ${model}:`,
+                error
+              );
+            }
           },
 
           // Also handle publish/unpublish events
           afterPublish: async (event) => {
-            console.log(`📢 ${model} published: ${event.result.id}`);
-            await handleContentUpdate(event);
+            try {
+              console.log(
+                `📢 ${model} published: ${event.result?.id || "unknown"}`
+              );
+              await handleContentUpdate(event);
+            } catch (error) {
+              console.error(
+                `❌ Error in afterPublish hook for ${model}:`,
+                error
+              );
+            }
           },
 
           afterUnpublish: async (event) => {
-            console.log(`📝 ${model} unpublished: ${event.result.id}`);
-            await handleContentDelete(event);
+            try {
+              console.log(
+                `📝 ${model} unpublished: ${event.result?.id || "unknown"}`
+              );
+              await handleContentDelete(event);
+            } catch (error) {
+              console.error(
+                `❌ Error in afterUnpublish hook for ${model}:`,
+                error
+              );
+            }
           },
         });
 

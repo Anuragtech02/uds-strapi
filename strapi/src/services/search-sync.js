@@ -366,11 +366,42 @@ async function syncAllContent() {
 }
 
 // Lifecycle hooks for real-time sync
+// Fixed lifecycle hooks for real-time sync
 async function handleContentUpdate(event) {
-  const { model, entry } = event.params;
+  console.log("🔍 DEBUG: handleContentUpdate called with event:", {
+    eventKeys: Object.keys(event),
+    hasResult: !!event.result,
+    hasParams: !!event.params,
+    resultKeys: event.result ? Object.keys(event.result) : "no result",
+  });
+
+  // Extract the correct data from Strapi v4 lifecycle event
+  const { result, params } = event;
+
+  if (!result) {
+    console.error(
+      "❌ No result found in lifecycle event. Event structure:",
+      JSON.stringify(event, null, 2)
+    );
+    return;
+  }
+
+  if (!params || !params.model) {
+    console.error(
+      "❌ No model found in lifecycle event params. Event structure:",
+      JSON.stringify(event, null, 2)
+    );
+    return;
+  }
+
+  const model = params.model;
+  const entry = result;
+
+  console.log(`🔄 Processing ${model} item ${entry.id}`);
 
   // Only sync published content
-  if (!entry.publishedAt && !entry.published_at) {
+  const isPublished = entry.publishedAt || entry.published_at;
+  if (!isPublished) {
     console.log(`⏭️ Skipping unpublished ${model} item ${entry.id}`);
     return;
   }
@@ -381,9 +412,11 @@ async function handleContentUpdate(event) {
     const typesense = getClient();
 
     // Get full item with relations
-    const fullItem = await strapi.db.query(model).findOne({
-      where: { id: entry.id },
-      populate: {
+    let populateConfig = {};
+
+    // Set populate based on content type
+    if (model === "api::report.report") {
+      populateConfig = {
         industries: { select: ["name"] },
         industry: { select: ["name"] },
         geographies: { select: ["name"] },
@@ -391,15 +424,31 @@ async function handleContentUpdate(event) {
         highlightImage: {
           select: ["url", "alternativeText", "width", "height"],
         },
-        featuredImage: {
-          select: ["url", "alternativeText", "width", "height"],
-        },
         author: { select: ["name", "username"] },
         tags: { select: ["name"] },
         source: { select: ["name"] },
         category: { select: ["name"] },
         reportType: { select: ["name"] },
-      },
+      };
+    } else if (model === "api::blog.blog") {
+      populateConfig = {
+        industries: { select: ["name"] },
+        author: { select: ["name", "username"] },
+        tags: { select: ["name"] },
+      };
+    } else if (model === "api::news-article.news-article") {
+      populateConfig = {
+        industries: { select: ["name"] },
+        author: { select: ["name", "username"] },
+        tags: { select: ["name"] },
+        source: { select: ["name"] },
+        category: { select: ["name"] },
+      };
+    }
+
+    const fullItem = await strapi.db.query(model).findOne({
+      where: { id: entry.id },
+      populate: populateConfig,
     });
 
     if (!fullItem) {
@@ -418,7 +467,27 @@ async function handleContentUpdate(event) {
 }
 
 async function handleContentDelete(event) {
-  const { model, entry } = event.params;
+  console.log("🔍 DEBUG: handleContentDelete called with event:", {
+    eventKeys: Object.keys(event),
+    hasResult: !!event.result,
+    hasParams: !!event.params,
+  });
+
+  // Extract the correct data from Strapi v4 lifecycle event
+  const { result, params } = event;
+
+  if (!result) {
+    console.error("❌ No result found in delete lifecycle event");
+    return;
+  }
+
+  if (!params || !params.model) {
+    console.error("❌ No model found in delete lifecycle event params");
+    return;
+  }
+
+  const model = params.model;
+  const entry = result;
 
   console.log(`🗑️ Removing ${model} item ${entry.id} from search`);
 
@@ -432,9 +501,12 @@ async function handleContentDelete(event) {
   } catch (error) {
     if (error.httpStatus !== 404) {
       console.error(`❌ Error removing ${model} item ${entry.id}:`, error);
+    } else {
+      console.log(`ℹ️ Document ${entry.id} was not in search index`);
     }
   }
 }
+
 async function updateCollectionSchema(ctx) {
   if (!ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
     return ctx.forbidden("Only admins can update schema");
