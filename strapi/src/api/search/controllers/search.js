@@ -1253,15 +1253,13 @@ module.exports = {
       return ctx.badRequest("Frontend search test failed: " + error.message);
     }
   },
-  // Add this diagnostic method to your search controller
-
-  // FIXED version - replace the debugBlogSync method
+  // COMPLETELY FIXED version - no locale filtering on relations
 
   async debugBlogSync(ctx) {
     try {
       console.log("🔍 DIAGNOSING BLOG SYNC ISSUE...");
 
-      // 1. Check English blogs in database (FIXED QUERY)
+      // 1. Check English blogs in database - NO POPULATE TO AVOID RELATION ISSUES
       console.log("\n📊 STEP 1: Database Analysis");
 
       const dbEnglishBlogs = await strapi.db.query("api::blog.blog").findMany({
@@ -1273,11 +1271,7 @@ module.exports = {
             { published_at: { $notNull: true } },
           ],
         },
-        // FIXED: Only populate fields that exist on the blog model, not the industries
-        populate: {
-          industries: true, // Simple populate without select
-          highlightImage: true, // Simple populate without select
-        },
+        // NO POPULATE - get relations separately
       });
 
       const totalEnglishBlogs = await strapi.db.query("api::blog.blog").count({
@@ -1294,19 +1288,35 @@ module.exports = {
         `📈 Total published English blogs in DB: ${totalEnglishBlogs}`
       );
       console.log("📝 Sample English blogs from DB:");
-      dbEnglishBlogs.forEach((blog, index) => {
+
+      // Get relations separately for the first few blogs
+      for (let i = 0; i < Math.min(dbEnglishBlogs.length, 5); i++) {
+        const blog = dbEnglishBlogs[i];
+
+        // Get industries separately (no locale filter)
+        let industries = [];
+        try {
+          const blogWithIndustries = await strapi.db
+            .query("api::blog.blog")
+            .findOne({
+              where: { id: blog.id },
+              populate: { industries: true },
+            });
+          industries = blogWithIndustries?.industries || [];
+        } catch (industryError) {
+          console.log(`⚠️ Could not get industries for blog ${blog.id}`);
+        }
+
         console.log(
-          `  ${index + 1}. "${blog.title}" (ID: ${blog.id}, locale: ${
-            blog.locale
-          })`
+          `  ${i + 1}. "${blog.title}" (ID: ${blog.id}, locale: ${blog.locale})`
         );
         console.log(
           `     Published: ${blog.publishedAt || blog.published_at || "N/A"}`
         );
-        console.log(`     Industries: ${blog.industries?.length || 0} items`);
+        console.log(`     Industries: ${industries.length} items`);
         console.log(`     Has shortDescription: ${!!blog.shortDescription}`);
         console.log(`     Has slug: ${!!blog.slug}`);
-      });
+      }
 
       // 2. Check what's in Typesense for English
       console.log("\n📊 STEP 2: Typesense Analysis");
@@ -1341,7 +1351,6 @@ module.exports = {
       const missingBlogs = [];
 
       for (const dbBlog of dbEnglishBlogs.slice(0, 5)) {
-        // Check first 5
         const typesenseId = `${dbBlog.id}_${dbBlog.locale}`;
 
         try {
@@ -1373,7 +1382,23 @@ module.exports = {
           try {
             console.log(`\n🧪 Testing preparation for blog ${missingBlog.id}:`);
 
-            // Manual document preparation (inline to avoid import issues)
+            // Get industries for this blog separately
+            let industries = [];
+            try {
+              const blogWithIndustries = await strapi.db
+                .query("api::blog.blog")
+                .findOne({
+                  where: { id: missingBlog.id },
+                  populate: { industries: true },
+                });
+              industries = blogWithIndustries?.industries || [];
+            } catch (industryError) {
+              console.log(
+                `⚠️ Could not get industries: ${industryError.message}`
+              );
+            }
+
+            // Manual document preparation
             const doc = {
               id: `${missingBlog.id}_${missingBlog.locale}`,
               originalId: missingBlog.id.toString(),
@@ -1383,7 +1408,7 @@ module.exports = {
               slug: missingBlog.slug || "",
               entity: "api::blog.blog",
               locale: missingBlog.locale || "en",
-              highlightImage: missingBlog.highlightImage || null,
+              highlightImage: null,
             };
 
             // Handle dates
@@ -1401,22 +1426,16 @@ module.exports = {
               doc.createdAt = new Date(missingBlog.createdAt).getTime();
             }
 
-            // Handle industries
-            if (
-              missingBlog.industries &&
-              Array.isArray(missingBlog.industries)
-            ) {
-              doc.industries = missingBlog.industries
-                .map((industry) =>
-                  typeof industry === "string"
-                    ? industry
-                    : industry.name || "Unknown"
-                )
-                .filter(Boolean);
-            } else {
-              doc.industries = [];
-            }
+            // Handle industries (they're English-only)
+            doc.industries = industries
+              .map((industry) =>
+                typeof industry === "string"
+                  ? industry
+                  : industry.name || "Unknown"
+              )
+              .filter(Boolean);
 
+            // Blogs don't have geographies
             doc.geographies = [];
 
             console.log("📄 Prepared document:", JSON.stringify(doc, null, 2));
@@ -1436,11 +1455,11 @@ module.exports = {
         }
       }
 
-      // 5. Check for common indexing issues (SIMPLIFIED QUERY)
+      // 5. Check for common indexing issues
       console.log("\n📊 STEP 5: Common Issues Check");
 
       const blogsWithIssues = await strapi.db.query("api::blog.blog").findMany({
-        limit: 50, // Reduced limit to avoid query complexity
+        limit: 20,
         filters: {
           locale: "en",
           $or: [
@@ -1448,7 +1467,6 @@ module.exports = {
             { published_at: { $notNull: true } },
           ],
         },
-        // No populate to avoid relation issues
       });
 
       const issueAnalysis = {
@@ -1482,14 +1500,8 @@ module.exports = {
 
       console.log("🔍 Issue analysis for English blogs:", issueAnalysis);
 
-      // 6. Check lifecycle hooks
-      console.log("\n📊 STEP 6: Lifecycle Hooks Check");
-      const lifecycleStatus =
-        strapi.db.lifecycles.subscribers.get("api::blog.blog");
-      console.log("🔗 Blog lifecycle hooks registered:", !!lifecycleStatus);
-
-      // 7. Check total blogs across all locales in Typesense for comparison
-      console.log("\n📊 STEP 7: Total Blog Comparison");
+      // 6. Check total blogs across all locales in Typesense
+      console.log("\n📊 STEP 6: Total Blog Comparison");
       const allTypesenseBlogs = await typesense
         .collections("search_content_v2")
         .documents()
@@ -1504,16 +1516,20 @@ module.exports = {
       console.log(
         `📈 Total blogs in Typesense (all locales): ${allTypesenseBlogs.found}`
       );
-      console.log(
-        "🌍 Locale breakdown:",
-        allTypesenseBlogs.facet_counts?.[0]?.counts || []
-      );
+
+      const localeBreakdown = allTypesenseBlogs.facet_counts?.[0]?.counts || [];
+      console.log("🌍 Locale breakdown:", localeBreakdown);
+
+      // Find English count in breakdown
+      const englishCount =
+        localeBreakdown.find((item) => item.value === "en")?.count || 0;
 
       return {
         timestamp: new Date().toISOString(),
         summary: {
           databaseEnglishBlogs: totalEnglishBlogs,
           typesenseEnglishBlogs: typesenseEnglishBlogs.found,
+          typesenseEnglishFromFacet: englishCount,
           typesenseTotalBlogs: allTypesenseBlogs.found,
           discrepancy: totalEnglishBlogs - typesenseEnglishBlogs.found,
           sampleMissingBlogs: missingBlogs.slice(0, 3).map((b) => ({
@@ -1524,8 +1540,7 @@ module.exports = {
             hasSlug: !!b.slug,
           })),
           issueAnalysis: issueAnalysis,
-          lifecycleHooksActive: !!lifecycleStatus,
-          localeBreakdown: allTypesenseBlogs.facet_counts?.[0]?.counts || [],
+          localeBreakdown: localeBreakdown,
         },
         recommendations: [
           totalEnglishBlogs > typesenseEnglishBlogs.found
@@ -1537,12 +1552,9 @@ module.exports = {
           issueAnalysis.missingShortDescription > 0
             ? "⚠️ Some blogs missing shortDescription"
             : "✅ All blogs have shortDescription",
-          issueAnalysis.missingSlug > 0
-            ? "⚠️ Some blogs missing slug"
-            : "✅ All blogs have slug",
-          !lifecycleStatus
-            ? "❌ Lifecycle hooks not registered"
-            : "✅ Lifecycle hooks active",
+          englishCount !== typesenseEnglishBlogs.found
+            ? "⚠️ Inconsistent English blog counts"
+            : "✅ Consistent counts",
         ],
       };
     } catch (error) {
@@ -1551,7 +1563,7 @@ module.exports = {
     }
   },
 
-  // Add this method to manually sync English blogs
+  // Also fix the sync method to handle non-localized relations
   async syncEnglishBlogsOnly(ctx) {
     if (!ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
       return ctx.forbidden("Only admins can sync blogs");
@@ -1560,7 +1572,7 @@ module.exports = {
     try {
       console.log("🔄 Starting English blogs sync...");
 
-      // Get all published English blogs
+      // Get all published English blogs WITHOUT populate first
       const englishBlogs = await strapi.db.query("api::blog.blog").findMany({
         filters: {
           locale: "en",
@@ -1568,10 +1580,6 @@ module.exports = {
             { publishedAt: { $notNull: true } },
             { published_at: { $notNull: true } },
           ],
-        },
-        populate: {
-          industries: { select: ["name"] },
-          highlightImage: { select: ["url"] },
         },
       });
 
@@ -1582,22 +1590,67 @@ module.exports = {
       }
 
       const typesense = getClient();
-      const {
-        prepareDocumentForIndexing,
-      } = require("../../../services/document-helpers");
-
       let synced = 0;
       let failed = 0;
 
-      // Process in batches
-      const batchSize = 20;
+      // Process in smaller batches to avoid relation query issues
+      const batchSize = 10;
       for (let i = 0; i < englishBlogs.length; i += batchSize) {
         const batch = englishBlogs.slice(i, i + batchSize);
         const documents = [];
 
         for (const blog of batch) {
           try {
-            const doc = prepareDocumentForIndexing(blog, "api::blog.blog");
+            // Get industries separately for each blog
+            let industries = [];
+            try {
+              const blogWithIndustries = await strapi.db
+                .query("api::blog.blog")
+                .findOne({
+                  where: { id: blog.id },
+                  populate: { industries: true },
+                });
+              industries = blogWithIndustries?.industries || [];
+            } catch (industryError) {
+              console.log(`⚠️ Could not get industries for blog ${blog.id}`);
+            }
+
+            // Prepare document
+            const doc = {
+              id: `${blog.id}_${blog.locale}`,
+              originalId: blog.id.toString(),
+              title: blog.title || "",
+              shortDescription: blog.shortDescription || blog.title || "",
+              slug: blog.slug || "",
+              entity: "api::blog.blog",
+              locale: blog.locale || "en",
+              highlightImage: blog.highlightImage || null,
+            };
+
+            // Handle dates
+            if (blog.oldPublishedAt) {
+              doc.oldPublishedAt = new Date(blog.oldPublishedAt).getTime();
+            } else if (blog.publishedAt) {
+              doc.oldPublishedAt = new Date(blog.publishedAt).getTime();
+            } else if (blog.published_at) {
+              doc.oldPublishedAt = new Date(blog.published_at).getTime();
+            }
+
+            if (blog.createdAt) {
+              doc.createdAt = new Date(blog.createdAt).getTime();
+            }
+
+            // Handle industries (English-only)
+            doc.industries = industries
+              .map((industry) =>
+                typeof industry === "string"
+                  ? industry
+                  : industry.name || "Unknown"
+              )
+              .filter(Boolean);
+
+            doc.geographies = [];
+
             documents.push(doc);
           } catch (prepError) {
             console.error(`❌ Error preparing blog ${blog.id}:`, prepError);
@@ -1623,6 +1676,13 @@ module.exports = {
                 Math.floor(i / batchSize) + 1
               }: ${batchSucceeded} synced, ${batchFailed} failed`
             );
+
+            if (batchFailed > 0) {
+              console.log(
+                "❌ Failed items:",
+                results.filter((r) => !r.success).slice(0, 2)
+              );
+            }
           } catch (batchError) {
             console.error(`❌ Batch error:`, batchError);
             failed += documents.length;
