@@ -77,5 +77,23 @@ module.exports = {
         auth: false,
       },
     },
+    {
+      method: "GET",
+      path: "/search/debug-sync-difference",
+      handler: "search.debugFullSyncVsSeparate",
+      config: { auth: false },
+    },
+    {
+      method: "POST",
+      path: "/search/test-main-sync-blogs",
+      handler: "search.testMainSyncBlogsOnly",
+      config: { auth: { scope: ["admin"] } },
+    },
+    {
+      method: "GET",
+      path: "/search/debug-collection-recreation",
+      handler: "search.debugCollectionRecreation",
+      config: { auth: false },
+    },
   ],
 };
