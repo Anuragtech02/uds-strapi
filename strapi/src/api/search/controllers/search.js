@@ -2115,19 +2115,19 @@ module.exports = {
       // Step 1: Test the separate sync method (working)
       console.log("\n📊 STEP 1: Testing Separate Sync Method (Working)");
 
-      const separateSyncResult = await testSeparateSyncMethod();
+      const separateSyncResult = await this.testSeparateSyncMethod();
       console.log("✅ Separate sync result:", separateSyncResult);
 
       // Step 2: Test the main sync method (not working)
       console.log("\n📊 STEP 2: Testing Main Sync Method (Not Working)");
 
-      const mainSyncResult = await testMainSyncMethod();
+      const mainSyncResult = await this.testMainSyncMethod();
       console.log("❌ Main sync result:", mainSyncResult);
 
       // Step 3: Compare the processes step by step
       console.log("\n📊 STEP 3: Step-by-Step Process Comparison");
 
-      const comparison = await compareProcesses();
+      const comparison = await this.compareProcesses();
 
       return {
         separateSync: separateSyncResult,
