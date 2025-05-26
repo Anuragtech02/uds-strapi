@@ -103,6 +103,118 @@ function prepareDocument(item, entityType) {
   return doc;
 }
 
+function prepareDocumentWithMedia(item, entityType) {
+  // Create base document structure
+  const doc = {
+    id: `${item.id}_${item.locale || "en"}`,
+    originalId: item.id.toString(),
+    title: item.title || "",
+    shortDescription: item.shortDescription || item.description || "",
+    slug: item.slug || "",
+    entity: entityType,
+    locale: item.locale || "en",
+    highlightImage: null, // Initialize as null
+  };
+
+  // ONLY handle highlightImage for reports
+  if (entityType === "api::report.report" && item.highlightImage) {
+    console.log(
+      `🖼️ Processing highlightImage for report ${item.id}:`,
+      typeof item.highlightImage
+    );
+
+    if (typeof item.highlightImage === "object") {
+      // Strapi v4 format: item.highlightImage = { id, url, alternativeText, etc. }
+      if (item.highlightImage.url) {
+        doc.highlightImage = item.highlightImage.url;
+      }
+      // Strapi v4 nested format: item.highlightImage = { data: { attributes: { url } } }
+      else if (item.highlightImage.data?.attributes?.url) {
+        doc.highlightImage = item.highlightImage.data.attributes.url;
+      }
+      // Array format (shouldn't happen with multiple: false, but just in case)
+      else if (
+        Array.isArray(item.highlightImage) &&
+        item.highlightImage[0]?.url
+      ) {
+        doc.highlightImage = item.highlightImage[0].url;
+      }
+    } else if (typeof item.highlightImage === "string") {
+      // Already a URL string
+      doc.highlightImage = item.highlightImage;
+    }
+  }
+  // For blogs and news, highlightImage stays null
+
+  // Handle publication dates
+  const dateFields = ["oldPublishedAt", "publishedAt", "published_at"];
+  for (const field of dateFields) {
+    if (item[field]) {
+      try {
+        doc.oldPublishedAt = new Date(item[field]).getTime();
+        break;
+      } catch (dateError) {
+        console.warn(
+          `Invalid date in field ${field} for item ${item.id}:`,
+          item[field]
+        );
+      }
+    }
+  }
+
+  // Handle creation date
+  if (item.createdAt) {
+    try {
+      doc.createdAt = new Date(item.createdAt).getTime();
+    } catch (dateError) {
+      console.warn(`Invalid createdAt for item ${item.id}:`, item.createdAt);
+    }
+  }
+
+  // Handle industries (reports use "industry" singular, blogs use "industries" plural)
+  doc.industries = [];
+  if (item.industry) {
+    // Single industry (reports)
+    const industryName =
+      typeof item.industry === "string" ? item.industry : item.industry.name;
+    if (industryName) {
+      doc.industries = [industryName];
+    }
+  } else if (item.industries && Array.isArray(item.industries)) {
+    // Multiple industries (blogs)
+    doc.industries = item.industries
+      .map((industry) =>
+        typeof industry === "string" ? industry : industry.name
+      )
+      .filter(Boolean);
+  }
+
+  // Handle geographies (only reports have geographies)
+  doc.geographies = [];
+  if (entityType === "api::report.report" && item.geography) {
+    // Single geography (reports)
+    const geographyName =
+      typeof item.geography === "string" ? item.geography : item.geography.name;
+    if (geographyName) {
+      doc.geographies = [geographyName];
+    }
+  } else if (
+    entityType === "api::report.report" &&
+    item.geographies &&
+    Array.isArray(item.geographies)
+  ) {
+    // Multiple geographies (if reports have this)
+    doc.geographies = item.geographies
+      .map((geography) =>
+        typeof geography === "string" ? geography : geography.name
+      )
+      .filter(Boolean);
+  }
+  // For blogs and news, geographies stays empty array
+
+  return doc;
+}
+
 /**
  * Specialized function for preparing blog documents
  * Handles blog-specific fields and fallbacks
@@ -227,4 +339,5 @@ module.exports = {
   prepareReportDocument,
   prepareNewsDocument,
   prepareDocumentForIndexing,
+  prepareDocumentWithMedia,
 };

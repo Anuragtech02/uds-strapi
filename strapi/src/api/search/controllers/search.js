@@ -422,43 +422,46 @@ module.exports = {
         data: searchResults.hits.map((hit) => {
           const doc = hit.document;
 
-          // Handle oldPublishedAt conversion more safely
+          // Handle date conversion
           let oldPublishedAt = null;
           if (doc.oldPublishedAt) {
             try {
-              // Check if it's already a valid date string
               if (
                 typeof doc.oldPublishedAt === "string" &&
                 doc.oldPublishedAt.includes("T")
               ) {
                 oldPublishedAt = doc.oldPublishedAt;
               } else {
-                // Convert timestamp to ISO string
                 const timestamp = parseInt(doc.oldPublishedAt);
                 if (!isNaN(timestamp)) {
                   oldPublishedAt = new Date(timestamp).toISOString();
                 }
               }
             } catch (dateError) {
-              console.warn(
-                `Error parsing oldPublishedAt for doc ${doc.id}:`,
-                dateError
-              );
+              console.warn(`Error parsing date for doc ${doc.id}:`, dateError);
             }
           }
 
-          return {
+          const baseResult = {
             id: doc.originalId || doc.id,
             title: doc.title,
             shortDescription: doc.shortDescription,
             slug: doc.slug,
             entity: doc.entity,
             locale: doc.locale,
-            highlightImage: doc.highlightImage,
             oldPublishedAt,
             industries: doc.industries?.map((name) => ({ name })) || [],
-            geographies: doc.geographies?.map((name) => ({ name })) || [],
           };
+
+          // Only add highlightImage for reports
+          if (doc.entity === "api::report.report") {
+            baseResult.highlightImage = doc.highlightImage || null;
+            baseResult.geographies =
+              doc.geographies?.map((name) => ({ name })) || [];
+          }
+          // For blogs and news, no highlightImage or geographies
+
+          return baseResult;
         }),
         meta: {
           pagination: {

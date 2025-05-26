@@ -102,6 +102,27 @@ async function syncContentType(model, entityType, batchSize = 50) {
           )})`
         );
 
+        // Build populate object based on entity type
+        let populateObj = {};
+
+        if (entityType === "api::report.report") {
+          populateObj = {
+            industry: true, // Reports use singular
+            geography: true, // Reports use singular
+            highlightImage: {
+              select: ["url", "alternativeText", "width", "height", "formats"],
+            },
+          };
+        } else if (entityType === "api::blog.blog") {
+          populateObj = {
+            industries: true, // Blogs use plural, no highlightImage, no geographies
+          };
+        } else if (entityType === "api::news-article.news-article") {
+          populateObj = {
+            industries: true, // News use plural, no highlightImage, no geographies
+          };
+        }
+
         const items = await strapi.db.query(model).findMany({
           offset,
           limit: batchSize,
@@ -111,23 +132,7 @@ async function syncContentType(model, entityType, batchSize = 50) {
               { published_at: { $notNull: true } },
             ],
           },
-          populate: {
-            industries: { select: ["name"] },
-            industry: { select: ["name"] },
-            geographies: { select: ["name"] },
-            geography: { select: ["name"] },
-            highlightImage: {
-              select: ["url", "alternativeText", "width", "height"],
-            },
-            featuredImage: {
-              select: ["url", "alternativeText", "width", "height"],
-            },
-            author: { select: ["name", "username"] },
-            tags: { select: ["name"] },
-            source: { select: ["name"] },
-            category: { select: ["name"] },
-            reportType: { select: ["name"] },
-          },
+          populate: populateObj,
         });
 
         if (items.length === 0) {
@@ -139,21 +144,25 @@ async function syncContentType(model, entityType, batchSize = 50) {
         const documents = [];
         for (const item of items) {
           try {
-            const doc = prepareDocumentForIndexing(item, entityType);
+            const doc = prepareDocumentWithMedia(item, entityType);
             documents.push(doc);
 
             // Log first few documents for debugging
             if (documents.length <= 3 && offset === 0) {
-              console.log(`📝 Sample document ${documents.length}:`, {
-                id: doc.id,
-                originalId: doc.originalId,
-                title: doc.title?.substring(0, 50) + "...",
-                entity: doc.entity,
-                locale: doc.locale,
-                hasShortDescription: !!doc.shortDescription,
-                industriesCount: doc.industries?.length || 0,
-                geographiesCount: doc.geographies?.length || 0,
-              });
+              console.log(
+                `📝 Sample ${entityType} document ${documents.length}:`,
+                {
+                  id: doc.id,
+                  originalId: doc.originalId,
+                  title: doc.title?.substring(0, 50) + "...",
+                  entity: doc.entity,
+                  locale: doc.locale,
+                  hasHighlightImage: !!doc.highlightImage,
+                  highlightImageUrl: doc.highlightImage,
+                  industriesCount: doc.industries?.length || 0,
+                  geographiesCount: doc.geographies?.length || 0,
+                }
+              );
             }
           } catch (prepError) {
             console.error(
@@ -183,12 +192,12 @@ async function syncContentType(model, entityType, batchSize = 50) {
           );
 
           if (batchFailed.length > 0) {
-            console.log("❌ Failed items:", batchFailed.slice(0, 3)); // Show first 3 failures
+            console.log("❌ Failed items:", batchFailed.slice(0, 3));
           }
         }
       } catch (batchError) {
         console.error(`❌ Batch processing error:`, batchError);
-        failed += batchSize; // Assume all items in batch failed
+        failed += batchSize;
       }
     }
 
