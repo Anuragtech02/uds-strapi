@@ -1255,11 +1255,13 @@ module.exports = {
   },
   // Add this diagnostic method to your search controller
 
+  // FIXED version - replace the debugBlogSync method
+
   async debugBlogSync(ctx) {
     try {
       console.log("🔍 DIAGNOSING BLOG SYNC ISSUE...");
 
-      // 1. Check English blogs in database
+      // 1. Check English blogs in database (FIXED QUERY)
       console.log("\n📊 STEP 1: Database Analysis");
 
       const dbEnglishBlogs = await strapi.db.query("api::blog.blog").findMany({
@@ -1271,9 +1273,10 @@ module.exports = {
             { published_at: { $notNull: true } },
           ],
         },
+        // FIXED: Only populate fields that exist on the blog model, not the industries
         populate: {
-          industries: { select: ["name"] },
-          highlightImage: { select: ["url"] },
+          industries: true, // Simple populate without select
+          highlightImage: true, // Simple populate without select
         },
       });
 
@@ -1300,11 +1303,9 @@ module.exports = {
         console.log(
           `     Published: ${blog.publishedAt || blog.published_at || "N/A"}`
         );
-        console.log(
-          `     Industries: ${
-            blog.industries?.map((i) => i.name).join(", ") || "None"
-          }`
-        );
+        console.log(`     Industries: ${blog.industries?.length || 0} items`);
+        console.log(`     Has shortDescription: ${!!blog.shortDescription}`);
+        console.log(`     Has slug: ${!!blog.slug}`);
       });
 
       // 2. Check what's in Typesense for English
@@ -1372,26 +1373,60 @@ module.exports = {
           try {
             console.log(`\n🧪 Testing preparation for blog ${missingBlog.id}:`);
 
-            // Import the document preparation function
-            const {
-              prepareDocumentForIndexing,
-            } = require("../../../services/document-helpers");
-            const preparedDoc = prepareDocumentForIndexing(
-              missingBlog,
-              "api::blog.blog"
-            );
+            // Manual document preparation (inline to avoid import issues)
+            const doc = {
+              id: `${missingBlog.id}_${missingBlog.locale}`,
+              originalId: missingBlog.id.toString(),
+              title: missingBlog.title || "",
+              shortDescription:
+                missingBlog.shortDescription || missingBlog.title || "",
+              slug: missingBlog.slug || "",
+              entity: "api::blog.blog",
+              locale: missingBlog.locale || "en",
+              highlightImage: missingBlog.highlightImage || null,
+            };
 
-            console.log(
-              "📄 Prepared document:",
-              JSON.stringify(preparedDoc, null, 2)
-            );
+            // Handle dates
+            if (missingBlog.oldPublishedAt) {
+              doc.oldPublishedAt = new Date(
+                missingBlog.oldPublishedAt
+              ).getTime();
+            } else if (missingBlog.publishedAt) {
+              doc.oldPublishedAt = new Date(missingBlog.publishedAt).getTime();
+            } else if (missingBlog.published_at) {
+              doc.oldPublishedAt = new Date(missingBlog.published_at).getTime();
+            }
+
+            if (missingBlog.createdAt) {
+              doc.createdAt = new Date(missingBlog.createdAt).getTime();
+            }
+
+            // Handle industries
+            if (
+              missingBlog.industries &&
+              Array.isArray(missingBlog.industries)
+            ) {
+              doc.industries = missingBlog.industries
+                .map((industry) =>
+                  typeof industry === "string"
+                    ? industry
+                    : industry.name || "Unknown"
+                )
+                .filter(Boolean);
+            } else {
+              doc.industries = [];
+            }
+
+            doc.geographies = [];
+
+            console.log("📄 Prepared document:", JSON.stringify(doc, null, 2));
 
             // Try to index this specific blog
             console.log("🔧 Attempting to index this blog...");
             const indexResult = await typesense
               .collections("search_content_v2")
               .documents()
-              .upsert(preparedDoc);
+              .upsert(doc);
 
             console.log("✅ Successfully indexed:", indexResult);
           } catch (prepError) {
@@ -1401,12 +1436,11 @@ module.exports = {
         }
       }
 
-      // 5. Check for common indexing issues
+      // 5. Check for common indexing issues (SIMPLIFIED QUERY)
       console.log("\n📊 STEP 5: Common Issues Check");
 
-      // Check for blogs with missing required fields
       const blogsWithIssues = await strapi.db.query("api::blog.blog").findMany({
-        limit: 100,
+        limit: 50, // Reduced limit to avoid query complexity
         filters: {
           locale: "en",
           $or: [
@@ -1414,6 +1448,7 @@ module.exports = {
             { published_at: { $notNull: true } },
           ],
         },
+        // No populate to avoid relation issues
       });
 
       const issueAnalysis = {
@@ -1453,19 +1488,44 @@ module.exports = {
         strapi.db.lifecycles.subscribers.get("api::blog.blog");
       console.log("🔗 Blog lifecycle hooks registered:", !!lifecycleStatus);
 
+      // 7. Check total blogs across all locales in Typesense for comparison
+      console.log("\n📊 STEP 7: Total Blog Comparison");
+      const allTypesenseBlogs = await typesense
+        .collections("search_content_v2")
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: "entity:=api::blog.blog",
+          per_page: 0,
+          facet_by: "locale",
+        });
+
+      console.log(
+        `📈 Total blogs in Typesense (all locales): ${allTypesenseBlogs.found}`
+      );
+      console.log(
+        "🌍 Locale breakdown:",
+        allTypesenseBlogs.facet_counts?.[0]?.counts || []
+      );
+
       return {
         timestamp: new Date().toISOString(),
         summary: {
           databaseEnglishBlogs: totalEnglishBlogs,
           typesenseEnglishBlogs: typesenseEnglishBlogs.found,
+          typesenseTotalBlogs: allTypesenseBlogs.found,
           discrepancy: totalEnglishBlogs - typesenseEnglishBlogs.found,
           sampleMissingBlogs: missingBlogs.slice(0, 3).map((b) => ({
             id: b.id,
             title: b.title,
             publishedAt: b.publishedAt || b.published_at,
+            hasShortDescription: !!b.shortDescription,
+            hasSlug: !!b.slug,
           })),
           issueAnalysis: issueAnalysis,
           lifecycleHooksActive: !!lifecycleStatus,
+          localeBreakdown: allTypesenseBlogs.facet_counts?.[0]?.counts || [],
         },
         recommendations: [
           totalEnglishBlogs > typesenseEnglishBlogs.found
@@ -1477,6 +1537,9 @@ module.exports = {
           issueAnalysis.missingShortDescription > 0
             ? "⚠️ Some blogs missing shortDescription"
             : "✅ All blogs have shortDescription",
+          issueAnalysis.missingSlug > 0
+            ? "⚠️ Some blogs missing slug"
+            : "✅ All blogs have slug",
           !lifecycleStatus
             ? "❌ Lifecycle hooks not registered"
             : "✅ Lifecycle hooks active",
