@@ -78,7 +78,7 @@ async function createCollection() {
   }
 }
 
-async function syncContentType(model, entityType, batchSize = 50) {
+async function syncContentType(model, entityType, batchSize = 5) {
   console.log(`\n🔄 Syncing ${entityType}...`);
 
   try {
