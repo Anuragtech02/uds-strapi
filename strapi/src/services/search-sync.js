@@ -14,7 +14,7 @@ const {
 const COLLECTION_NAME = "search_content_v2";
 
 const COLLECTION_SCHEMA = {
-  name: COLLECTION_NAME,
+  name: "search_content_v2",
   fields: [
     { name: "id", type: "string" },
     { name: "originalId", type: "string" },
@@ -23,7 +23,7 @@ const COLLECTION_SCHEMA = {
     { name: "slug", type: "string", optional: true },
     { name: "entity", type: "string", facet: true },
     { name: "locale", type: "string", facet: true },
-    { name: "highlightImage", type: "object", optional: true },
+    { name: "highlightImage", type: "string", optional: true }, // ✅ Changed from "object" to "string"
     { name: "oldPublishedAt", type: "int64", optional: true },
     { name: "createdAt", type: "int64", optional: true },
     { name: "industries", type: "string[]", facet: true, optional: true },
@@ -49,11 +49,18 @@ async function createCollection() {
     } catch (deleteError) {
       if (deleteError.httpStatus !== 404) {
         console.log("⚠️ Error deleting collection:", deleteError.message);
+      } else {
+        console.log("ℹ️ Collection doesn't exist, creating new one");
       }
     }
 
     // Wait a moment for cleanup
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    console.log(
+      "📋 Creating collection with schema:",
+      JSON.stringify(COLLECTION_SCHEMA, null, 2)
+    );
 
     // Create new collection
     const result = await typesense.collections().create(COLLECTION_SCHEMA);
@@ -61,10 +68,14 @@ async function createCollection() {
     return result;
   } catch (error) {
     console.error("❌ Error creating collection:", error);
+    console.error("❌ Error details:", {
+      message: error.message,
+      httpStatus: error.httpStatus,
+      httpBody: error.httpBody,
+    });
     throw error;
   }
 }
-
 async function syncContentType(model, entityType, batchSize = 50) {
   console.log(`\n🔄 Syncing ${entityType}...`);
 
@@ -358,6 +369,42 @@ async function handleContentDelete(event) {
     if (error.httpStatus !== 404) {
       console.error(`❌ Error removing ${model} item ${entry.id}:`, error);
     }
+  }
+}
+async function updateCollectionSchema(ctx) {
+  if (!ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
+    return ctx.forbidden("Only admins can update schema");
+  }
+
+  try {
+    const typesense = getClient();
+
+    console.log("🔄 Attempting to update collection schema...");
+
+    // Check current schema
+    const currentCollection = await typesense
+      .collections(COLLECTION_NAME)
+      .retrieve();
+    console.log(
+      "📋 Current schema fields:",
+      currentCollection.fields.map((f) => `${f.name}: ${f.type}`)
+    );
+
+    // For this specific error, we need to recreate the collection
+    // because you can't change field types in Typesense
+    console.log("⚠️ highlightImage type needs to change from object to string");
+    console.log("🔄 Recreating collection...");
+
+    await createCollection();
+
+    return {
+      success: true,
+      message: "Collection schema updated successfully",
+      newSchema: COLLECTION_SCHEMA.fields,
+    };
+  } catch (error) {
+    console.error("❌ Schema update failed:", error);
+    return ctx.badRequest("Schema update failed: " + error.message);
   }
 }
 

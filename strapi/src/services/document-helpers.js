@@ -103,6 +103,7 @@ function prepareDocument(item, entityType) {
   return doc;
 }
 
+// Updated document preparation to ensure highlightImage is always a string
 function prepareDocumentWithMedia(item, entityType) {
   // Create base document structure
   const doc = {
@@ -113,38 +114,46 @@ function prepareDocumentWithMedia(item, entityType) {
     slug: item.slug || "",
     entity: entityType,
     locale: item.locale || "en",
-    highlightImage: null, // Initialize as null
+    highlightImage: null, // Will be string or null
   };
 
-  // ONLY handle highlightImage for reports
+  // ONLY handle highlightImage for reports, ensure it's a string
   if (entityType === "api::report.report" && item.highlightImage) {
-    console.log(
-      `🖼️ Processing highlightImage for report ${item.id}:`,
-      typeof item.highlightImage
-    );
+    let imageUrl = null;
 
     if (typeof item.highlightImage === "object") {
       // Strapi v4 format: item.highlightImage = { id, url, alternativeText, etc. }
       if (item.highlightImage.url) {
-        doc.highlightImage = item.highlightImage.url;
+        imageUrl = item.highlightImage.url;
       }
       // Strapi v4 nested format: item.highlightImage = { data: { attributes: { url } } }
       else if (item.highlightImage.data?.attributes?.url) {
-        doc.highlightImage = item.highlightImage.data.attributes.url;
+        imageUrl = item.highlightImage.data.attributes.url;
       }
       // Array format (shouldn't happen with multiple: false, but just in case)
       else if (
         Array.isArray(item.highlightImage) &&
         item.highlightImage[0]?.url
       ) {
-        doc.highlightImage = item.highlightImage[0].url;
+        imageUrl = item.highlightImage[0].url;
       }
     } else if (typeof item.highlightImage === "string") {
       // Already a URL string
-      doc.highlightImage = item.highlightImage;
+      imageUrl = item.highlightImage;
     }
+
+    // Ensure it's a valid string
+    if (imageUrl && typeof imageUrl === "string" && imageUrl.trim()) {
+      doc.highlightImage = imageUrl.trim();
+    } else {
+      doc.highlightImage = null; // Explicitly set to null if invalid
+    }
+
+    console.log(`🖼️ Report ${item.id} highlightImage: ${doc.highlightImage}`);
+  } else {
+    // For blogs and news, explicitly set to null
+    doc.highlightImage = null;
   }
-  // For blogs and news, highlightImage stays null
 
   // Handle publication dates
   const dateFields = ["oldPublishedAt", "publishedAt", "published_at"];
@@ -198,19 +207,7 @@ function prepareDocumentWithMedia(item, entityType) {
     if (geographyName) {
       doc.geographies = [geographyName];
     }
-  } else if (
-    entityType === "api::report.report" &&
-    item.geographies &&
-    Array.isArray(item.geographies)
-  ) {
-    // Multiple geographies (if reports have this)
-    doc.geographies = item.geographies
-      .map((geography) =>
-        typeof geography === "string" ? geography : geography.name
-      )
-      .filter(Boolean);
   }
-  // For blogs and news, geographies stays empty array
 
   return doc;
 }
