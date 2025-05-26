@@ -77,12 +77,14 @@ async function createCollection() {
     throw error;
   }
 }
+
 async function syncContentType(model, entityType, batchSize = 50) {
   console.log(`\n🔄 Syncing ${entityType}...`);
 
   try {
-    // Get total count first
-    const total = await strapi.db.query(model).count({
+    // STEP 1: Get all published content IDs first (without any populate)
+    const publishedItems = await strapi.db.query(model).findMany({
+      select: ["id", "locale"], // Only get IDs and locale
       filters: {
         $or: [
           { publishedAt: { $notNull: true } },
@@ -91,6 +93,7 @@ async function syncContentType(model, entityType, batchSize = 50) {
       },
     });
 
+    const total = publishedItems.length;
     console.log(`📊 Found ${total} published ${entityType} items`);
 
     if (total === 0) {
@@ -102,7 +105,7 @@ async function syncContentType(model, entityType, batchSize = 50) {
     let synced = 0;
     let failed = 0;
 
-    // Process in batches
+    // STEP 2: Process in batches using the IDs (no filters in main query)
     for (let offset = 0; offset < total; offset += batchSize) {
       try {
         console.log(
@@ -114,36 +117,38 @@ async function syncContentType(model, entityType, batchSize = 50) {
           )})`
         );
 
-        // FIXED: Simplified populate object to avoid media table filtering
+        const batchIds = publishedItems
+          .slice(offset, offset + batchSize)
+          .map((item) => item.id);
+
+        // Build populate object based on entity type
         let populateObj = {};
 
         if (entityType === "api::report.report") {
           populateObj = {
-            industry: true, // Reports use singular
-            geography: true, // Reports use singular
-            highlightImage: true, // ✅ SIMPLIFIED - no select to avoid filtering issues
+            industry: true,
+            geography: true,
+            highlightImage: true, // ✅ This should work now without filters
           };
         } else if (entityType === "api::blog.blog") {
           populateObj = {
-            industries: true, // Blogs use plural, no highlightImage, no geographies
+            industries: true,
           };
         } else if (entityType === "api::news-article.news-article") {
           populateObj = {
-            industries: true, // News use plural, no highlightImage, no geographies
+            industries: true,
           };
         }
 
+        // STEP 3: Get full items by ID (no publishedAt filters here!)
         const items = await strapi.db.query(model).findMany({
-          offset,
-          limit: batchSize,
-          filters: {
-            $or: [
-              { publishedAt: { $notNull: true } },
-              { published_at: { $notNull: true } },
-            ],
+          where: {
+            id: { $in: batchIds }, // ✅ Only filter by ID, no publishedAt filters
           },
           populate: populateObj,
         });
+
+        console.log(`📄 Retrieved ${items.length} items for batch`);
 
         if (items.length === 0) {
           console.log("📭 No items in this batch");
@@ -202,7 +207,7 @@ async function syncContentType(model, entityType, batchSize = 50) {
           );
 
           if (batchFailed.length > 0) {
-            console.log("❌ Failed items:", batchFailed.slice(0, 3));
+            console.log("❌ Failed items sample:", batchFailed.slice(0, 2));
           }
         }
       } catch (batchError) {
