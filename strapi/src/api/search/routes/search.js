@@ -101,5 +101,17 @@ module.exports = {
       handler: "search.syncAllClean",
       config: { auth: false },
     },
+    {
+      method: "GET",
+      path: "/search/debug-sync-comparison",
+      handler: "search.debugSyncProcessComparison",
+      config: { auth: false },
+    },
+    {
+      method: "POST",
+      path: "/search/test-main-sync-logging",
+      handler: "search.testMainSyncWithLogging",
+      config: { auth: false },
+    },
   ],
 };
