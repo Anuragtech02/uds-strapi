@@ -21,6 +21,9 @@ module.exports = {
   // Add this debug endpoint to your search controller temporarily
   // This will help us see what's actually in your Typesense collection
 
+  // Add this debug endpoint to your search controller temporarily
+  // This will help us see what's actually in your Typesense collection
+
   async debugSearch(ctx) {
     try {
       const { locale = "en", q = "india" } = ctx.query;
@@ -538,6 +541,7 @@ module.exports = {
   },
 
   // Add this method to your search controller for cleanup
+  // Add this method to your search controller for cleanup
   async cleanupCollection(ctx) {
     if (!ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
       return ctx.forbidden("Only admins can cleanup collection");
@@ -551,12 +555,23 @@ module.exports = {
 
       try {
         await typesense.collections("content").delete();
-        console.log("✅ Collection deleted successfully");
+        console.log("✅ Old 'content' collection deleted");
       } catch (deleteError) {
         if (deleteError.httpStatus === 404) {
-          console.log("ℹ️ Collection doesn't exist, proceeding...");
+          console.log("ℹ️ Old 'content' collection doesn't exist");
         } else {
-          throw deleteError;
+          console.log("⚠️ Error deleting old collection:", deleteError.message);
+        }
+      }
+
+      try {
+        await typesense.collections("search_content_v2").delete();
+        console.log("✅ New 'search_content_v2' collection deleted");
+      } catch (deleteError) {
+        if (deleteError.httpStatus === 404) {
+          console.log("ℹ️ New 'search_content_v2' collection doesn't exist");
+        } else {
+          console.log("⚠️ Error deleting new collection:", deleteError.message);
         }
       }
 
@@ -572,6 +587,7 @@ module.exports = {
       return ctx.badRequest("Cleanup failed: " + error.message);
     }
   },
+  // Add this method to test blog searches specifically
   // Add this method to test blog searches specifically
   async testBlogSearch(ctx) {
     try {

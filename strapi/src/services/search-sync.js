@@ -2,7 +2,7 @@
 
 const { getClient } = require("./typesense");
 
-const COLLECTION_NAME = "content";
+const COLLECTION_NAME = "search_content_v2";
 
 const initializeTypesense = async () => {
   const typesense = getClient();
@@ -12,9 +12,9 @@ const initializeTypesense = async () => {
   try {
     // First, ALWAYS try to create the collection
     try {
-      console.log("Creating collection content...");
+      console.log("Creating collection search_content_v2...");
       const createResult = await typesense.collections().create({
-        name: COLLECTION_NAME, // "content"
+        name: COLLECTION_NAME, // "search_content_v2"
         fields: [
           { name: "id", type: "string" },
           { name: "originalId", type: "string" },
@@ -35,6 +35,9 @@ const initializeTypesense = async () => {
           { name: "createdAt", type: "int64", sort: true, optional: true },
         ],
         default_sorting_field: "oldPublishedAt",
+        // Add explicit token separators to improve search
+        token_separators: ["-", "_"],
+        symbols_to_index: ["_"],
       });
       console.log("Collection created successfully:", createResult);
       return true;
@@ -345,6 +348,9 @@ const syncAllContent = async () => {
     console.log(`\n=== SYNC COMPLETE ===`);
     console.log(`Successfully synced ${totalProcessed} documents to Typesense`);
 
+    // Run immediate verification
+    await verifySyncResults();
+
     // Get final stats
     try {
       const typesense = getClient();
@@ -461,6 +467,96 @@ const getEntityRelations = (entityType) => {
     default:
       return ["industries", "highlightImage"]; // Default fallback
   }
+};
+
+// Post-sync verification function
+const verifySyncResults = async () => {
+  console.log(`\n=== POST-SYNC VERIFICATION ===`);
+
+  try {
+    const typesense = getClient();
+
+    // Test 1: Count all documents by entity
+    const allDocsSearch = await typesense
+      .collections(COLLECTION_NAME)
+      .documents()
+      .search({
+        q: "*",
+        per_page: 0,
+        facet_by: "entity,locale",
+      });
+
+    console.log(`📊 Total documents indexed: ${allDocsSearch.found}`);
+
+    if (allDocsSearch.facet_counts) {
+      allDocsSearch.facet_counts.forEach((facet) => {
+        console.log(`\n${facet.field_name.toUpperCase()}:`);
+        facet.counts.slice(0, 10).forEach((count) => {
+          console.log(`  ${count.value}: ${count.count} documents`);
+        });
+      });
+    }
+
+    // Test 2: Specific blog verification
+    const blogTest = await typesense
+      .collections(COLLECTION_NAME)
+      .documents()
+      .search({
+        q: "*",
+        query_by: "title",
+        filter_by: "entity:=api::blog.blog && locale:=en",
+        per_page: 5,
+      });
+
+    console.log(`\n📝 BLOG VERIFICATION:`);
+    console.log(`Found ${blogTest.found} blogs in English`);
+
+    if (blogTest.hits.length > 0) {
+      console.log(`Sample blogs:`);
+      blogTest.hits.forEach((hit, index) => {
+        console.log(
+          `  ${index + 1}. "${hit.document.title}" (ID: ${
+            hit.document.id
+          }, originalId: ${hit.document.originalId})`
+        );
+      });
+    } else {
+      console.log(`❌ NO BLOGS FOUND - This indicates a problem!`);
+    }
+
+    // Test 3: Sample search that should include blogs
+    const sampleSearch = await typesense
+      .collections(COLLECTION_NAME)
+      .documents()
+      .search({
+        q: "*",
+        query_by: "title,shortDescription",
+        filter_by: "locale:=en",
+        per_page: 20,
+        sort_by: "oldPublishedAt:desc",
+      });
+
+    const entityBreakdown = {};
+    sampleSearch.hits.forEach((hit) => {
+      const entity = hit.document.entity;
+      entityBreakdown[entity] = (entityBreakdown[entity] || 0) + 1;
+    });
+
+    console.log(`\n🔍 SAMPLE SEARCH RESULTS (top 20 by date):`);
+    Object.entries(entityBreakdown).forEach(([entity, count]) => {
+      console.log(`  ${entity}: ${count} results`);
+    });
+
+    if (entityBreakdown["api::blog.blog"]) {
+      console.log(`✅ Blogs appear in search results!`);
+    } else {
+      console.log(`❌ Blogs NOT appearing in search results!`);
+    }
+  } catch (error) {
+    console.error(`❌ Verification failed:`, error);
+  }
+
+  console.log(`=== END VERIFICATION ===\n`);
 };
 
 module.exports = {
