@@ -1565,9 +1565,9 @@ module.exports = {
 
   // Also fix the sync method to handle non-localized relations
   async syncEnglishBlogsOnly(ctx) {
-    if (!ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
-      return ctx.forbidden("Only admins can sync blogs");
-    }
+    // if (!ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
+    //   return ctx.forbidden("Only admins can sync blogs");
+    // }
 
     try {
       console.log("🔄 Starting English blogs sync...");
