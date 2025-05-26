@@ -1,7 +1,12 @@
 "use strict";
 const {
+  prepareDocumentWithMedia,
+} = require("../../../services/document-helpers");
+const {
   syncAllContent,
   syncContentType,
+  createCollection,
+  COLLECTION_NAME,
 } = require("../../../services/search-sync");
 const { getClient } = require("../../../services/typesense");
 
@@ -931,7 +936,7 @@ module.exports = {
       );
 
       // Step 2: Check the actual collection being used
-      const targetCollectionName = "search_content_v2"; // Based on your logs
+      let targetCollectionName = "search_content_v2"; // Based on your logs
       let collectionExists = false;
       let collection = null;
 
