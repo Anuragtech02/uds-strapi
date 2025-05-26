@@ -9,7 +9,7 @@ const {
   prepareReportDocument,
   prepareNewsDocument,
   prepareDocumentForIndexing,
-} = require("./document-helpers"); // You'll create this file with the helper functions
+} = require("./document-helpers");
 
 const COLLECTION_NAME = "search_content_v2";
 
