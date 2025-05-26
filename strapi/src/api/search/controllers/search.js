@@ -5,16 +5,17 @@ const { getClient } = require("../../../services/typesense");
 module.exports = {
   // For manual admin syncing
   async syncAll(ctx) {
-    if (ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
-      try {
-        await syncAllContent();
-        return { success: true, message: "Content sync started successfully" };
-      } catch (error) {
-        return ctx.badRequest("Failed to sync content: " + error.message);
-      }
-    } else {
-      return ctx.forbidden("Only admins can trigger a full sync");
+    // if (ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
+    try {
+      await syncAllContent();
+      return { success: true, message: "Content sync started successfully" };
+    } catch (error) {
+      return ctx.badRequest("Failed to sync content: " + error.message);
     }
+    // }
+    // else {
+    //   return ctx.forbidden("Only admins can trigger a full sync");
+    // }
   },
 
   // Debug endpoint to troubleshoot search issues

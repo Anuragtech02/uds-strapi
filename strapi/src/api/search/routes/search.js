@@ -15,9 +15,7 @@ module.exports = {
       path: "/search/sync",
       handler: "search.syncAll",
       config: {
-        auth: {
-          scope: ["admin"],
-        },
+        auth: false,
       },
     },
     {
