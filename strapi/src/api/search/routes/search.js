@@ -95,5 +95,11 @@ module.exports = {
       handler: "search.debugCollectionRecreation",
       config: { auth: false },
     },
+    {
+      method: "POST",
+      path: "/search/sync-clean",
+      handler: "search.syncAllClean",
+      config: { auth: false },
+    },
   ],
 };

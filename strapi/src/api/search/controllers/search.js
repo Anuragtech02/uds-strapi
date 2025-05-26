@@ -7,6 +7,7 @@ const {
   syncContentType,
   createCollection,
   COLLECTION_NAME,
+  syncAllContentClean,
 } = require("../../../services/search-sync");
 const { getClient } = require("../../../services/typesense");
 
@@ -28,6 +29,19 @@ module.exports = {
     //   return ctx.forbidden("Only admins can trigger a full sync");
     // }
   },
+
+  async  syncAllClean(ctx) {
+  // if (ctx.state.user?.roles?.find((r) => r.code === "strapi-super-admin")) {
+    try {
+      const result = await syncAllContentClean(); // Clean version that recreates collection
+      return { success: true, message: "Clean sync completed successfully", result };
+    } catch (error) {
+      return ctx.badRequest("Failed to sync content: " + error.message);
+    }
+  // } else {
+  //   return ctx.forbidden("Only admins can trigger a clean sync");
+  // }
+}
 
   // Debug endpoint to troubleshoot search issues
   // Add this debug endpoint to your search controller temporarily

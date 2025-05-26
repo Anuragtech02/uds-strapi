@@ -471,9 +471,101 @@ async function updateCollectionSchema(ctx) {
     return ctx.badRequest("Schema update failed: " + error.message);
   }
 }
+async function syncAllContentClean() {
+  console.log("🚀 Starting CLEAN full content sync (recreating collection)...");
+  const startTime = Date.now();
+
+  try {
+    // This version DOES recreate the collection (for when you want a fresh start)
+    await createCollection();
+
+    // Wait for collection to be ready
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    const results = {};
+
+    // Sync each content type
+    const contentTypes = [
+      { model: "api::blog.blog", entity: "api::blog.blog", name: "Blogs" },
+      {
+        model: "api::report.report",
+        entity: "api::report.report",
+        name: "Reports",
+      },
+      {
+        model: "api::news-article.news-article",
+        entity: "api::news-article.news-article",
+        name: "News",
+      },
+    ];
+
+    for (const contentType of contentTypes) {
+      try {
+        results[contentType.name] = await syncContentType(
+          contentType.model,
+          contentType.entity
+        );
+      } catch (typeError) {
+        console.error(`❌ Failed to sync ${contentType.name}:`, typeError);
+        results[contentType.name] = {
+          synced: 0,
+          failed: 0,
+          error: typeError.message,
+        };
+      }
+    }
+
+    // Verify final counts
+    console.log("\n🔍 Verifying sync results...");
+    const typesense = getClient();
+
+    try {
+      const finalCount = await typesense
+        .collections(COLLECTION_NAME)
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          per_page: 0,
+          facet_by: "entity,locale",
+        });
+
+      console.log(`📊 Total documents in search index: ${finalCount.found}`);
+      console.log(
+        "📊 By entity type:",
+        finalCount.facet_counts?.[0]?.counts || []
+      );
+
+      // Check English blogs specifically
+      const englishBlogCount = await typesense
+        .collections(COLLECTION_NAME)
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: "locale:=en && entity:=api::blog.blog",
+          per_page: 0,
+        });
+
+      console.log(`📊 English blogs: ${englishBlogCount.found}`);
+    } catch (verifyError) {
+      console.error("❌ Error verifying sync:", verifyError);
+    }
+
+    const duration = Math.round((Date.now() - startTime) / 1000);
+    console.log(`\n🎉 Clean sync completed in ${duration} seconds`);
+    console.log("📋 Results:", results);
+
+    return results;
+  } catch (error) {
+    console.error("❌ Clean sync failed:", error);
+    throw error;
+  }
+}
 
 module.exports = {
   syncAllContent,
+  syncAllContentClean,
   handleContentUpdate,
   handleContentDelete,
   syncContentType,
