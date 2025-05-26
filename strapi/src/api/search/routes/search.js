@@ -76,9 +76,7 @@ module.exports = {
       path: "/search/sync-english-blogs",
       handler: "search.syncEnglishBlogsOnly",
       config: {
-        auth: {
-          scope: ["admin"],
-        },
+        auth: false,
       },
     },
   ],
