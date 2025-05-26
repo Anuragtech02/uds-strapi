@@ -40,5 +40,10 @@ module.exports = {
       path: "/search/test-blogs",
       handler: "search.testBlogSearch",
     },
+    {
+      method: "GET",
+      path: "/search/debug-locales",
+      handler: "search.debugLocales",
+    },
   ],
 };

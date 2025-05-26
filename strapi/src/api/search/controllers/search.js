@@ -703,4 +703,115 @@ module.exports = {
       return ctx.badRequest("Blog search test failed: " + error.message);
     }
   },
+  // Add this method to debug locale issues
+  async debugLocales(ctx) {
+    try {
+      const typesense = getClient();
+
+      // Test 1: Get blog distribution by locale from Typesense
+      const blogsByLocale = await typesense
+        .collections("search_content_v2")
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: "entity:=api::blog.blog",
+          per_page: 0,
+          facet_by: "locale",
+        });
+
+      // Test 2: Get sample blogs from each locale
+      const localeTests = {};
+      const topLocales =
+        blogsByLocale.facet_counts?.[0]?.counts?.slice(0, 5) || [];
+
+      for (const localeCount of topLocales) {
+        const locale = localeCount.value;
+        try {
+          const sampleBlogs = await typesense
+            .collections("search_content_v2")
+            .documents()
+            .search({
+              q: "*",
+              query_by: "title",
+              filter_by: `entity:=api::blog.blog && locale:=${locale}`,
+              per_page: 3,
+            });
+
+          localeTests[locale] = {
+            count: localeCount.count,
+            samples: sampleBlogs.hits.map((hit) => ({
+              id: hit.document.id,
+              originalId: hit.document.originalId,
+              title: hit.document.title?.substring(0, 60) + "...",
+              locale: hit.document.locale,
+            })),
+          };
+        } catch (error) {
+          localeTests[locale] = { error: error.message };
+        }
+      }
+
+      // Test 3: Check database vs Typesense for blog locales
+      console.log("Checking database blog locales...");
+      const dbBlogLocales = {};
+
+      try {
+        // Get locale breakdown from database
+        const locales = await strapi.plugin("i18n").service("locales").find();
+        for (const locale of locales.slice(0, 5)) {
+          // Check first 5 locales
+          const count = await strapi.db.query("api::blog.blog").count({
+            filters: { locale: locale.code },
+          });
+          if (count > 0) {
+            dbBlogLocales[locale.code] = count;
+
+            // Get sample from database
+            const sampleBlog = await strapi.db.query("api::blog.blog").findOne({
+              filters: { locale: locale.code },
+              populate: {
+                industries: { select: ["name"] },
+                highlightImage: { select: ["url"] },
+              },
+            });
+
+            if (sampleBlog) {
+              dbBlogLocales[locale.code + "_sample"] = {
+                id: sampleBlog.id,
+                title: sampleBlog.title?.substring(0, 60) + "...",
+                locale: sampleBlog.locale,
+                hasIndustries: !!(
+                  sampleBlog.industries && sampleBlog.industries.length > 0
+                ),
+              };
+            }
+          }
+        }
+      } catch (dbError) {
+        console.error("Error checking database:", dbError);
+      }
+
+      return {
+        typesenseBlogsByLocale: blogsByLocale.facet_counts?.[0]?.counts || [],
+        samplesByLocale: localeTests,
+        databaseBlogsByLocale: dbBlogLocales,
+        totalBlogsInTypesense: blogsByLocale.found,
+        analysis: {
+          issue:
+            blogsByLocale.facet_counts?.[0]?.counts?.find(
+              (c) => c.value === "en"
+            )?.count || 0,
+          expected: "Should be around 323 blogs in English",
+          actualEnglishBlogs:
+            blogsByLocale.facet_counts?.[0]?.counts?.find(
+              (c) => c.value === "en"
+            )?.count || 0,
+        },
+      };
+    } catch (error) {
+      console.error("Locale debug error:", error);
+      return ctx.badRequest("Locale debug failed: " + error.message);
+    }
+  },
 };

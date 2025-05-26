@@ -88,7 +88,7 @@ const formatDocument = (item, entityType) => {
     shortDescription: item.shortDescription || item.short_description || "",
     slug: item.slug || "",
     entity: entityType,
-    locale: item.locale || "en",
+    locale: item.locale || item.localizations?.[0]?.locale || "en", // Handle potential locale issues
     highlightImage:
       item.highlightImage?.url ||
       item.highlight_image?.url ||
@@ -142,14 +142,16 @@ const formatDocument = (item, entityType) => {
   // Debug logging for blogs
   if (entityType === "api::blog.blog") {
     console.log(`🔍 Formatting blog ${item.id}:`, {
-      originalTitle: item.title,
-      locale: item.locale,
-      industriesRaw: item.industries,
-      industriesFormatted: doc.industries,
+      originalTitle: item.title?.substring(0, 50) + "...",
+      originalLocale: item.locale,
+      finalLocale: doc.locale,
+      industriesRaw: item.industries?.length || 0,
+      industriesFormatted: doc.industries?.length || 0,
       hasHighlightImage: !!doc.highlightImage,
       oldPublishedAt: oldPublishedAtTimestamp
         ? new Date(oldPublishedAtTimestamp).toISOString()
         : null,
+      uniqueId: doc.id,
     });
   }
 
