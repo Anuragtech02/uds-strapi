@@ -231,19 +231,56 @@ async function syncContentType(model, entityType, batchSize = 50) {
 }
 
 async function syncAllContent() {
-  console.log("🚀 Starting full content sync...");
+  console.log("🚀 Starting full content sync (preserving existing data)...");
   const startTime = Date.now();
 
   try {
-    // Create collection first
-    await createCollection();
+    const typesense = getClient();
 
-    // Wait for collection to be ready
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // FIXED: Don't recreate collection if it exists - just verify it's there
+    let collectionExists = false;
+    try {
+      const existingCollection = await typesense
+        .collections(COLLECTION_NAME)
+        .retrieve();
+      console.log(
+        `✅ Using existing collection '${COLLECTION_NAME}' with ${existingCollection.num_documents} documents`
+      );
+      collectionExists = true;
+
+      // Show current counts before sync
+      const currentCounts = await typesense
+        .collections(COLLECTION_NAME)
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          per_page: 0,
+          facet_by: "entity",
+        });
+
+      console.log(
+        "📊 Current entity counts:",
+        currentCounts.facet_counts?.[0]?.counts || []
+      );
+    } catch (collectionError) {
+      if (collectionError.httpStatus === 404) {
+        console.log("📝 Collection doesn't exist, creating new one...");
+        await createCollection();
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        collectionExists = true;
+      } else {
+        throw collectionError;
+      }
+    }
+
+    if (!collectionExists) {
+      throw new Error("Failed to create or verify collection");
+    }
 
     const results = {};
 
-    // Sync each content type
+    // Sync each content type (this will upsert, not replace)
     const contentTypes = [
       { model: "api::blog.blog", entity: "api::blog.blog", name: "Blogs" },
       {
@@ -260,6 +297,7 @@ async function syncAllContent() {
 
     for (const contentType of contentTypes) {
       try {
+        console.log(`\n🔄 Syncing ${contentType.name}...`);
         results[contentType.name] = await syncContentType(
           contentType.model,
           contentType.entity
@@ -276,7 +314,6 @@ async function syncAllContent() {
 
     // Verify final counts
     console.log("\n🔍 Verifying sync results...");
-    const typesense = getClient();
 
     try {
       const finalCount = await typesense
@@ -286,7 +323,7 @@ async function syncAllContent() {
           q: "*",
           query_by: "title",
           per_page: 0,
-          facet_by: "entity",
+          facet_by: "entity,locale",
         });
 
       console.log(`📊 Total documents in search index: ${finalCount.found}`);
@@ -294,6 +331,25 @@ async function syncAllContent() {
         "📊 By entity type:",
         finalCount.facet_counts?.[0]?.counts || []
       );
+
+      // Check English blogs specifically
+      const englishBlogs =
+        finalCount.facet_counts?.[1]?.counts?.find((c) => c.value === "en")
+          ?.count || 0;
+      console.log(`📊 English content: ${englishBlogs} items`);
+
+      // Double-check English blogs specifically
+      const englishBlogCount = await typesense
+        .collections(COLLECTION_NAME)
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: "locale:=en && entity:=api::blog.blog",
+          per_page: 0,
+        });
+
+      console.log(`📊 English blogs specifically: ${englishBlogCount.found}`);
     } catch (verifyError) {
       console.error("❌ Error verifying sync:", verifyError);
     }
