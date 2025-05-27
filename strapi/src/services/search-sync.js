@@ -4,12 +4,7 @@ const { getClient } = require("./typesense");
 
 // Import the document preparation helpers
 const {
-  prepareDocument,
-  prepareBlogDocument,
-  prepareReportDocument,
-  prepareNewsDocument,
   prepareDocumentForIndexing,
-  prepareDocumentWithMedia,
   createUniqueDocumentId,
 } = require("./document-helpers");
 
