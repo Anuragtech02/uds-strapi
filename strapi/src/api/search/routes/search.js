@@ -107,5 +107,11 @@ module.exports = {
       handler: "search.manualEnglishReportTest",
       config: { auth: false },
     },
+    {
+      method: "GET",
+      path: "/search/debug-missing-reports",
+      handler: "search.debugMissingReports",
+      config: { auth: false },
+    },
   ],
 };

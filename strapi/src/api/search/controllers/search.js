@@ -2752,4 +2752,302 @@ module.exports = {
       return { error: error.message, stack: error.stack };
     }
   },
+  // Debug specific missing reports issue
+  async debugMissingReports(ctx) {
+    try {
+      console.log("🔍 DEBUGGING MISSING REPORTS ISSUE");
+
+      // Test cases: reports we know should exist but might be missing
+      const testReports = [
+        {
+          searchTerm: "Collectibles Market Current Analysis Forecast 2024-2032",
+          expectedTitle:
+            "Collectibles Market: Current Analysis and Forecast (2024-2032)",
+          partialTerms: [
+            "Collectibles Market",
+            "2024-2032",
+            "Current Analysis Forecast",
+          ],
+        },
+        {
+          searchTerm:
+            "Vietnam Telecom Market Current Analysis Forecast 2023-2030",
+          expectedTitle:
+            "Vietnam Telecom Market: Current Analysis and Forecast (2023-2030)",
+          partialTerms: ["Vietnam Telecom", "2023-2030", "Current Analysis"],
+        },
+      ];
+
+      const typesense = getClient();
+      const results = {};
+
+      for (const testReport of testReports) {
+        console.log(`\n🧪 Testing: ${testReport.expectedTitle}`);
+
+        const testResult = {
+          expectedTitle: testReport.expectedTitle,
+          searchTests: {},
+          databaseCheck: null,
+          indexDirectCheck: null,
+          partialMatches: {},
+        };
+
+        // Test 1: Search with full expected title
+        try {
+          const fullTitleSearch = await typesense
+            .collections("search_content_v2")
+            .documents()
+            .search({
+              q: testReport.searchTerm,
+              query_by: "title,shortDescription",
+              filter_by: "locale:=en && entity:=api::report.report",
+              per_page: 10,
+            });
+
+          testResult.searchTests.fullTitle = {
+            found: fullTitleSearch.found,
+            exactMatch: fullTitleSearch.hits.some(
+              (hit) => hit.document.title === testReport.expectedTitle
+            ),
+            results: fullTitleSearch.hits.map((hit) => ({
+              id: hit.document.originalId,
+              title: hit.document.title,
+              isExactMatch: hit.document.title === testReport.expectedTitle,
+            })),
+          };
+
+          console.log(
+            `📊 Full title search: ${fullTitleSearch.found} found, exact match: ${testResult.searchTests.fullTitle.exactMatch}`
+          );
+        } catch (error) {
+          testResult.searchTests.fullTitle = { error: error.message };
+        }
+
+        // Test 2: Search with partial terms
+        for (const partialTerm of testReport.partialTerms) {
+          try {
+            const partialSearch = await typesense
+              .collections("search_content_v2")
+              .documents()
+              .search({
+                q: partialTerm,
+                query_by: "title,shortDescription",
+                filter_by: "locale:=en && entity:=api::report.report",
+                per_page: 5,
+              });
+
+            testResult.partialMatches[partialTerm] = {
+              found: partialSearch.found,
+              exactMatch: partialSearch.hits.some(
+                (hit) => hit.document.title === testReport.expectedTitle
+              ),
+              topResults: partialSearch.hits.slice(0, 2).map((hit) => ({
+                id: hit.document.originalId,
+                title: hit.document.title,
+              })),
+            };
+
+            console.log(
+              `📊 "${partialTerm}": ${partialSearch.found} found, exact match: ${testResult.partialMatches[partialTerm].exactMatch}`
+            );
+          } catch (error) {
+            testResult.partialMatches[partialTerm] = { error: error.message };
+          }
+        }
+
+        // Test 3: Check if report exists in database
+        try {
+          const dbSearch = await strapi.db
+            .query("api::report.report")
+            .findMany({
+              select: ["id", "title", "locale", "publishedAt", "slug"],
+              filters: {
+                title: { $containsi: testReport.expectedTitle.split(":")[0] }, // Search for first part
+                locale: "en",
+                $or: [
+                  { publishedAt: { $notNull: true } },
+                  { published_at: { $notNull: true } },
+                ],
+              },
+              limit: 10,
+            });
+
+          testResult.databaseCheck = {
+            found: dbSearch.length,
+            exactMatch: dbSearch.some(
+              (r) => r.title === testReport.expectedTitle
+            ),
+            results: dbSearch.map((r) => ({
+              id: r.id,
+              title: r.title,
+              slug: r.slug,
+              publishedAt: r.publishedAt,
+              isExactMatch: r.title === testReport.expectedTitle,
+            })),
+          };
+
+          console.log(
+            `🗄️ Database check: ${dbSearch.length} found, exact match: ${testResult.databaseCheck.exactMatch}`
+          );
+
+          // If found in database, check if it should be in index
+          const exactDbMatch = dbSearch.find(
+            (r) => r.title === testReport.expectedTitle
+          );
+          if (exactDbMatch) {
+            const expectedIndexId = `${exactDbMatch.id}_en`;
+
+            try {
+              const directIndexCheck = await typesense
+                .collections("search_content_v2")
+                .documents()
+                .search({
+                  q: "*",
+                  query_by: "title",
+                  filter_by: `id:=${expectedIndexId}`,
+                  per_page: 1,
+                });
+
+              testResult.indexDirectCheck = {
+                expectedId: expectedIndexId,
+                found: directIndexCheck.found > 0,
+                document: directIndexCheck.hits[0]?.document || null,
+              };
+
+              console.log(
+                `🔍 Direct index check for ID ${expectedIndexId}: ${
+                  directIndexCheck.found > 0 ? "Found" : "Missing"
+                }`
+              );
+            } catch (error) {
+              testResult.indexDirectCheck = {
+                expectedId: expectedIndexId,
+                error: error.message,
+              };
+            }
+          }
+        } catch (error) {
+          testResult.databaseCheck = { error: error.message };
+        }
+
+        results[testReport.expectedTitle] = testResult;
+      }
+
+      // Additional check: Get a broader sample of what's actually indexed vs database
+      console.log("\n📊 Broader sample analysis...");
+
+      const sampleDbReports = await strapi.db
+        .query("api::report.report")
+        .findMany({
+          select: ["id", "title", "locale"],
+          filters: {
+            locale: "en",
+            $or: [
+              { publishedAt: { $notNull: true } },
+              { published_at: { $notNull: true } },
+            ],
+          },
+          limit: 20,
+          offset: Math.floor(Math.random() * 1000), // Random sample
+        });
+
+      const sampleAnalysis = {
+        sampleSize: sampleDbReports.length,
+        indexedCount: 0,
+        missingCount: 0,
+        missingReports: [],
+      };
+
+      for (const dbReport of sampleDbReports) {
+        const expectedIndexId = `${dbReport.id}_en`;
+
+        try {
+          const indexCheck = await typesense
+            .collections("search_content_v2")
+            .documents()
+            .search({
+              q: "*",
+              query_by: "title",
+              filter_by: `id:=${expectedIndexId}`,
+              per_page: 1,
+            });
+
+          if (indexCheck.found > 0) {
+            sampleAnalysis.indexedCount++;
+          } else {
+            sampleAnalysis.missingCount++;
+            sampleAnalysis.missingReports.push({
+              id: dbReport.id,
+              title: dbReport.title,
+              expectedIndexId: expectedIndexId,
+            });
+          }
+        } catch (error) {
+          sampleAnalysis.missingCount++;
+          sampleAnalysis.missingReports.push({
+            id: dbReport.id,
+            title: dbReport.title,
+            expectedIndexId: expectedIndexId,
+            error: error.message,
+          });
+        }
+      }
+
+      console.log(
+        `📊 Sample analysis: ${sampleAnalysis.indexedCount}/${sampleAnalysis.sampleSize} reports properly indexed`
+      );
+
+      return {
+        testReports: results,
+        sampleAnalysis: sampleAnalysis,
+        summary: {
+          collectiblesReportInDatabase:
+            results[testReports[0].expectedTitle]?.databaseCheck?.exactMatch ||
+            false,
+          collectiblesReportInIndex:
+            results[testReports[0].expectedTitle]?.indexDirectCheck?.found ||
+            false,
+          vietnamReportInDatabase:
+            results[testReports[1].expectedTitle]?.databaseCheck?.exactMatch ||
+            false,
+          vietnamReportInIndex:
+            results[testReports[1].expectedTitle]?.indexDirectCheck?.found ||
+            false,
+          sampleIndexingSuccess:
+            sampleAnalysis.sampleSize > 0
+              ? (
+                  (sampleAnalysis.indexedCount / sampleAnalysis.sampleSize) *
+                  100
+                ).toFixed(1) + "%"
+              : "N/A",
+          estimatedMissingReports:
+            sampleAnalysis.missingCount > 0
+              ? `~${Math.round(
+                  (sampleAnalysis.missingCount / sampleAnalysis.sampleSize) *
+                    3220
+                )} out of 3220 English reports`
+              : "Very few",
+        },
+        recommendations: [
+          sampleAnalysis.missingCount === 0
+            ? "✅ All sampled reports properly indexed"
+            : `❌ ${sampleAnalysis.missingCount}/${sampleAnalysis.sampleSize} sampled reports missing from index`,
+          results[testReports[0].expectedTitle]?.databaseCheck?.exactMatch &&
+          !results[testReports[0].expectedTitle]?.indexDirectCheck?.found
+            ? "❌ Collectibles report exists in DB but missing from index"
+            : "✅ Collectibles report indexing status normal",
+          results[testReports[1].expectedTitle]?.databaseCheck?.exactMatch &&
+          !results[testReports[1].expectedTitle]?.indexDirectCheck?.found
+            ? "❌ Vietnam report exists in DB but missing from index"
+            : "✅ Vietnam report indexing status normal",
+          sampleAnalysis.missingCount > sampleAnalysis.indexedCount
+            ? "❌ Major bulk sync issue - most reports not indexed"
+            : "✅ Most reports indexed successfully",
+        ],
+      };
+    } catch (error) {
+      console.error("❌ Missing reports debug failed:", error);
+      return ctx.badRequest("Debug failed: " + error.message);
+    }
+  },
 };
