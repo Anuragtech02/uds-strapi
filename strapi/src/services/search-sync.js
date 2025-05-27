@@ -105,7 +105,7 @@ async function syncContentType(model, entityType, batchSize = 50) {
     let synced = 0;
     let failed = 0;
 
-    // STEP 2: Process in batches using the IDs (no filters in main query)
+    // STEP 2: Process in batches using the IDs
     for (let offset = 0; offset < total; offset += batchSize) {
       try {
         console.log(
@@ -121,29 +121,31 @@ async function syncContentType(model, entityType, batchSize = 50) {
           .slice(offset, offset + batchSize)
           .map((item) => item.id);
 
-        // Build populate object based on entity type
+        // FIXED: Use simple populate without locale filters to avoid relation issues
         let populateObj = {};
 
         if (entityType === "api::report.report") {
           populateObj = {
-            industry: true,
-            geography: true,
-            highlightImage: true, // ✅ This should work now without filters
+            industry: { select: ["name"] }, // Simple populate without locale filter
+            geography: { select: ["name"] }, // Simple populate without locale filter
+            highlightImage: {
+              select: ["url", "alternativeText", "width", "height"],
+            },
           };
         } else if (entityType === "api::blog.blog") {
           populateObj = {
-            industries: true,
+            industries: { select: ["name"] }, // Simple populate without locale filter
           };
         } else if (entityType === "api::news-article.news-article") {
           populateObj = {
-            industries: true,
+            industries: { select: ["name"] }, // Simple populate without locale filter
           };
         }
 
         // STEP 3: Get full items by ID (no publishedAt filters here!)
         const items = await strapi.db.query(model).findMany({
           where: {
-            id: { $in: batchIds }, // ✅ Only filter by ID, no publishedAt filters
+            id: { $in: batchIds },
           },
           populate: populateObj,
         });
@@ -159,7 +161,146 @@ async function syncContentType(model, entityType, batchSize = 50) {
         const documents = [];
         for (const item of items) {
           try {
-            const doc = prepareDocumentWithMedia(item, entityType);
+            // Use manual document preparation to avoid the prepareDocumentWithMedia issues
+            const doc = {
+              id: `${item.id}_${item.locale || "en"}`,
+              originalId: item.id.toString(),
+              title: item.title || "",
+              shortDescription: item.shortDescription || item.description || "",
+              slug: item.slug || "",
+              entity: entityType,
+              locale: item.locale || "en",
+              highlightImage: null,
+            };
+
+            // Handle highlight image for reports only
+            if (entityType === "api::report.report" && item.highlightImage) {
+              try {
+                if (
+                  typeof item.highlightImage === "object" &&
+                  item.highlightImage.url
+                ) {
+                  doc.highlightImage = item.highlightImage.url;
+                } else if (typeof item.highlightImage === "string") {
+                  doc.highlightImage = item.highlightImage;
+                }
+              } catch (imageError) {
+                console.warn(
+                  `⚠️ Error processing highlightImage for ${item.id}:`,
+                  imageError.message
+                );
+                doc.highlightImage = null;
+              }
+            }
+
+            // Handle publication dates
+            const dateFields = [
+              "oldPublishedAt",
+              "publishedAt",
+              "published_at",
+            ];
+            let foundValidDate = false;
+
+            for (const field of dateFields) {
+              if (item[field] && !foundValidDate) {
+                try {
+                  let timestamp;
+                  const dateValue = item[field];
+
+                  if (typeof dateValue === "string") {
+                    const parsedDate = new Date(dateValue);
+                    if (!isNaN(parsedDate.getTime())) {
+                      timestamp = parsedDate.getTime();
+                    }
+                  } else if (typeof dateValue === "number") {
+                    if (dateValue > 0) {
+                      timestamp = dateValue;
+                    }
+                  } else if (dateValue instanceof Date) {
+                    timestamp = dateValue.getTime();
+                  }
+
+                  if (timestamp && timestamp > 0) {
+                    doc.oldPublishedAt = timestamp;
+                    foundValidDate = true;
+                    break;
+                  }
+                } catch (dateError) {
+                  console.warn(
+                    `⚠️ Invalid date in field ${field} for item ${item.id}:`,
+                    dateError.message
+                  );
+                }
+              }
+            }
+
+            if (!foundValidDate) {
+              // Use creation date as fallback
+              if (item.createdAt) {
+                try {
+                  const createdTimestamp = new Date(item.createdAt).getTime();
+                  doc.oldPublishedAt = createdTimestamp;
+                } catch (createdError) {
+                  doc.oldPublishedAt = Date.now();
+                }
+              } else {
+                doc.oldPublishedAt = Date.now();
+              }
+            }
+
+            // Handle creation date
+            if (item.createdAt) {
+              try {
+                const createdTimestamp = new Date(item.createdAt).getTime();
+                if (!isNaN(createdTimestamp)) {
+                  doc.createdAt = createdTimestamp;
+                }
+              } catch (dateError) {
+                console.warn(
+                  `⚠️ Invalid createdAt for item ${item.id}:`,
+                  dateError.message
+                );
+              }
+            }
+
+            // Handle industries
+            doc.industries = [];
+            try {
+              if (item.industry && item.industry.name) {
+                // Single industry (reports)
+                doc.industries = [item.industry.name];
+              } else if (item.industries && Array.isArray(item.industries)) {
+                // Multiple industries (blogs, news)
+                doc.industries = item.industries
+                  .map((industry) => industry.name)
+                  .filter(Boolean);
+              }
+            } catch (industryError) {
+              console.warn(
+                `⚠️ Error processing industries for ${entityType} ${item.id}:`,
+                industryError.message
+              );
+              doc.industries = [];
+            }
+
+            // Handle geographies (only for reports)
+            doc.geographies = [];
+            try {
+              if (
+                entityType === "api::report.report" &&
+                item.geography &&
+                item.geography.name
+              ) {
+                doc.geographies = [item.geography.name];
+              }
+            } catch (geographyError) {
+              console.warn(
+                `⚠️ Error processing geographies for ${entityType} ${item.id}:`,
+                geographyError.message
+              );
+              doc.geographies = [];
+            }
+
             documents.push(doc);
 
             // Log first few documents for debugging
@@ -172,8 +313,7 @@ async function syncContentType(model, entityType, batchSize = 50) {
                   title: doc.title?.substring(0, 50) + "...",
                   entity: doc.entity,
                   locale: doc.locale,
-                  hasHighlightImage: !!doc.highlightImage,
-                  highlightImageUrl: doc.highlightImage,
+                  hasOldPublishedAt: !!doc.oldPublishedAt,
                   industriesCount: doc.industries?.length || 0,
                   geographiesCount: doc.geographies?.length || 0,
                 }
