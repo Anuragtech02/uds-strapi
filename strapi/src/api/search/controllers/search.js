@@ -246,16 +246,25 @@ module.exports = {
       let term = rawTerm;
       if (term) {
         try {
-          // Decode URL-encoded characters
-          term = decodeURIComponent(term);
-          // Replace + with spaces (in case of form encoding)
+          // URL form encoding uses + for spaces, so replace + with spaces first
           term = term.replace(/\+/g, " ");
-          // Clean up extra spaces
+
+          // Then decode any remaining URL-encoded characters (%20, etc.)
+          term = decodeURIComponent(term);
+
+          // Clean up extra spaces and normalize
           term = term.trim().replace(/\s+/g, " ");
+
+          console.log("🔍 Query processing in backend:");
+          console.log("  Raw term:", rawTerm);
+          console.log("  After + replacement:", term.replace(/\+/g, " "));
+          console.log("  After decoding:", term);
+          console.log("  Final term:", term);
         } catch (decodeError) {
           console.warn("Failed to decode search term:", rawTerm, decodeError);
-          // Use original term if decoding fails
-          term = rawTerm;
+          // Fallback: just replace + with spaces and clean
+          term = rawTerm.replace(/\+/g, " ").trim().replace(/\s+/g, " ");
+          console.log("🔍 Fallback processing result:", term);
         }
       }
 
