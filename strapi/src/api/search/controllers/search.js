@@ -383,7 +383,7 @@ module.exports = {
       // Build search parameters
       const searchParams = {
         q: isEmptySearch ? "*" : term,
-        query_by: "title,shortDescription",
+        query_by: "title",
         filter_by: filterBy,
         per_page: Math.min(parseInt(pageSize, 10), 100),
         page: Math.max(parseInt(page, 10), 1),
