@@ -4,16 +4,21 @@ const Typesense = require("typesense");
 
 let typesenseClient = null;
 
+const HOST = process.env.TYPESENSE_HOST || "typesense";
+const PORT = process.env.TYPESENSE_PORT || 8108;
+const PROTOCOL = process.env.TYPESENSE_PROTOCOL || "http";
+const API_KEY = process.env.TYPESENSE_API_KEY;
+
 const typesense = new Typesense.Client({
   nodes: [
     {
-      host: "typesense.inspectionapp.in",
-      port: "443",
-      protocol: "https",
-      path: "", // Add this line - sometimes path prefixes are needed
+      host: HOST,
+      port: PORT,
+      protocol: PROTOCOL,
+      path: "",
     },
   ],
-  apiKey: "your-api-key",
+  apiKey: API_KEY,
   connectionTimeoutSeconds: 10, // Increase timeout
   //   logger: {
   //     error: (message) => {
@@ -23,37 +28,6 @@ const typesense = new Typesense.Client({
   logLevel: "debug",
   retryIntervalSeconds: 2, // Add retry logic
 });
-
-// Add this debug function
-const testTypesenseConnection = async () => {
-  try {
-    // Test a simple API call
-    const health = await fetch("https://typesense.inspectionapp.in/health", {
-      headers: {
-        "X-TYPESENSE-API-KEY": "your-api-key",
-      },
-    });
-    console.log("Health check status:", health.status);
-    console.log("Health check body:", await health.text());
-
-    // Try to list collections directly
-    const collections = await fetch(
-      "https://typesense.inspectionapp.in/collections",
-      {
-        headers: {
-          "X-TYPESENSE-API-KEY": "your-api-key",
-        },
-      }
-    );
-    console.log("Collections status:", collections.status);
-    console.log("Collections body:", await collections.text());
-  } catch (error) {
-    console.error("Connection test failed:", error);
-  }
-};
-
-// Run the test
-testTypesenseConnection();
 
 function getClient() {
   if (!typesenseClient) {
