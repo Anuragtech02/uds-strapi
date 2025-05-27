@@ -233,7 +233,7 @@ module.exports = {
   async search(ctx) {
     try {
       const {
-        q: term,
+        q: rawTerm,
         locale = "en",
         tab,
         page = 1,
@@ -242,6 +242,27 @@ module.exports = {
         industries,
         geographies,
       } = ctx.query;
+
+      let term = rawTerm;
+      if (term) {
+        try {
+          // Decode URL-encoded characters
+          term = decodeURIComponent(term);
+          // Replace + with spaces (in case of form encoding)
+          term = term.replace(/\+/g, " ");
+          // Clean up extra spaces
+          term = term.trim().replace(/\s+/g, " ");
+        } catch (decodeError) {
+          console.warn("Failed to decode search term:", rawTerm, decodeError);
+          // Use original term if decoding fails
+          term = rawTerm;
+        }
+      }
+
+      console.log("🔍 Search query processing:");
+      console.log("  Raw term from URL:", rawTerm);
+      console.log("  Decoded term:", term);
+      console.log("  Term length:", term?.length || 0);
 
       const minTermLength = 2;
       const isEmptySearch = !term || term.length < minTermLength;
