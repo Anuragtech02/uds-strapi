@@ -1,4 +1,10 @@
-// Add this to your search-sync.js file
+export function createUniqueDocumentId(item, entityType) {
+  // Extract entity type suffix for shorter IDs
+  const entitySuffix = entityType.split("::")[1]?.split(".")[0] || "unknown";
+
+  // Create unique ID: {originalId}_{entityType}_{locale}
+  return `${item.id}_${entitySuffix}_${item.locale || "en"}`;
+}
 
 /**
  * Prepares a Strapi document for Typesense indexing
@@ -7,7 +13,7 @@
 function prepareDocument(item, entityType) {
   // Create base document structure that all content types share
   const doc = {
-    id: `${item.id}_${item.locale || "en"}`, // Unique ID combining original ID and locale
+    id: createUniqueDocumentId(item, entityType),
     originalId: item.id.toString(), // Keep original Strapi ID for frontend
     title: item.title || "",
     shortDescription:
@@ -107,10 +113,10 @@ function prepareDocument(item, entityType) {
 function prepareDocumentWithMedia(item, entityType) {
   // Create base document structure
   const doc = {
-    id: `${item.id}_${item.locale || "en"}`,
+    id: createUniqueDocumentId(item, entityType),
     originalId: item.id.toString(),
     title: item.title || "",
-    shortDescription: item.shortDescription || item.description || "",
+    shortDescription: item.shortDescription || "",
     slug: item.slug || "",
     entity: entityType,
     locale: item.locale || "en",

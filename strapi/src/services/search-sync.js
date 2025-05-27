@@ -10,6 +10,7 @@ const {
   prepareNewsDocument,
   prepareDocumentForIndexing,
   prepareDocumentWithMedia,
+  createUniqueDocumentId,
 } = require("./document-helpers");
 
 const COLLECTION_NAME = "search_content_v2";
@@ -163,7 +164,7 @@ async function syncContentType(model, entityType, batchSize = 50) {
           try {
             // Use manual document preparation to avoid the prepareDocumentWithMedia issues
             const doc = {
-              id: `${item.id}_${item.locale || "en"}`,
+              id: createUniqueDocumentId(item, entityType),
               originalId: item.id.toString(),
               title: item.title || "",
               shortDescription: item.shortDescription || item.description || "",
@@ -303,19 +304,16 @@ async function syncContentType(model, entityType, batchSize = 50) {
 
             documents.push(doc);
 
-            // Log first few documents for debugging
+            // Enhanced logging to catch collisions
             if (documents.length <= 3 && offset === 0) {
               console.log(
                 `📝 Sample ${entityType} document ${documents.length}:`,
                 {
-                  id: doc.id,
+                  uniqueId: doc.id, // ✅ Show the new unique ID format
                   originalId: doc.originalId,
                   title: doc.title?.substring(0, 50) + "...",
                   entity: doc.entity,
                   locale: doc.locale,
-                  hasOldPublishedAt: !!doc.oldPublishedAt,
-                  industriesCount: doc.industries?.length || 0,
-                  geographiesCount: doc.geographies?.length || 0,
                 }
               );
             }
