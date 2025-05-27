@@ -462,7 +462,7 @@ module.exports = {
           try {
             const countParams = {
               q: isEmptySearch ? "*" : term,
-              query_by: "title,shortDescription",
+              query_by: "title",
               filter_by: `locale:=${locale} && entity:=${entityType.key}`,
               per_page: 0,
             };
