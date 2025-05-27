@@ -95,5 +95,17 @@ module.exports = {
       handler: "search.debugVietnamReportVsNews",
       config: { auth: false },
     },
+    {
+      method: "GET",
+      path: "/search/debug-english-indexing",
+      handler: "search.debugEnglishIndexing",
+      config: { auth: false },
+    },
+    {
+      method: "POST",
+      path: "/search/manual-vietnam-test",
+      handler: "search.manualEnglishReportTest",
+      config: { auth: false },
+    },
   ],
 };

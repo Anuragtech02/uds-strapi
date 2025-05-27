@@ -383,7 +383,7 @@ module.exports = {
       // Build search parameters
       const searchParams = {
         q: isEmptySearch ? "*" : term,
-        query_by: "title",
+        query_by: "title,shortDescription",
         filter_by: filterBy,
         per_page: Math.min(parseInt(pageSize, 10), 100),
         page: Math.max(parseInt(page, 10), 1),
@@ -2415,6 +2415,341 @@ module.exports = {
     } catch (error) {
       console.error("Vietnam debug error:", error);
       return ctx.badRequest("Debug failed: " + error.message);
+    }
+  },
+  // Debug why English content isn't being indexed
+  async debugEnglishIndexing(ctx) {
+    try {
+      console.log("🔍 DEBUGGING ENGLISH CONTENT INDEXING ISSUE");
+
+      // Step 1: Get a few English reports from database
+      const englishReports = await strapi.db
+        .query("api::report.report")
+        .findMany({
+          filters: {
+            locale: "en",
+            $or: [
+              { publishedAt: { $notNull: true } },
+              { published_at: { $notNull: true } },
+            ],
+          },
+          limit: 5,
+          populate: {
+            industry: { select: ["name"] },
+            geography: { select: ["name"] },
+            highlightImage: { select: ["url", "alternativeText"] },
+          },
+        });
+
+      console.log(
+        `📊 Found ${englishReports.length} English reports in database`
+      );
+
+      const processingResults = [];
+      const typesense = getClient();
+
+      // Step 2: Test document preparation for each report
+      for (const report of englishReports) {
+        console.log(`\n🧪 Testing report ID ${report.id}: "${report.title}"`);
+
+        const testResult = {
+          reportId: report.id,
+          title: report.title,
+          locale: report.locale,
+          publishedAt: report.publishedAt,
+          oldPublishedAt: report.oldPublishedAt,
+          hasIndustry: !!report.industry,
+          hasGeography: !!report.geography,
+          hasHighlightImage: !!report.highlightImage,
+          preparationSuccess: false,
+          preparationError: null,
+          documentCreated: null,
+          indexingSuccess: false,
+          indexingError: null,
+          searchableAfterIndex: false,
+        };
+
+        try {
+          // Test document preparation
+          const doc = prepareDocumentWithMedia(report, "api::report.report");
+          testResult.preparationSuccess = true;
+          testResult.documentCreated = {
+            id: doc.id,
+            originalId: doc.originalId,
+            title: doc.title,
+            entity: doc.entity,
+            locale: doc.locale,
+            hasOldPublishedAt: !!doc.oldPublishedAt,
+            oldPublishedAtValue: doc.oldPublishedAt,
+            industriesCount: doc.industries?.length || 0,
+            geographiesCount: doc.geographies?.length || 0,
+            highlightImage: doc.highlightImage,
+          };
+
+          console.log(
+            `✅ Document preparation successful:`,
+            testResult.documentCreated
+          );
+
+          // Test indexing
+          try {
+            const indexResult = await typesense
+              .collections("search_content_v2")
+              .documents()
+              .upsert(doc);
+
+            testResult.indexingSuccess = true;
+            console.log(`✅ Indexing successful:`, indexResult);
+
+            // Test if it's searchable
+            const searchTest = await typesense
+              .collections("search_content_v2")
+              .documents()
+              .search({
+                q: "*",
+                query_by: "title",
+                filter_by: `id:=${doc.id}`,
+                per_page: 1,
+              });
+
+            testResult.searchableAfterIndex = searchTest.found > 0;
+            console.log(
+              `🔍 Searchable after index: ${testResult.searchableAfterIndex}`
+            );
+          } catch (indexError) {
+            testResult.indexingError = indexError.message;
+            console.log(`❌ Indexing failed:`, indexError.message);
+          }
+        } catch (prepError) {
+          testResult.preparationError = prepError.message;
+          console.log(`❌ Document preparation failed:`, prepError.message);
+        }
+
+        processingResults.push(testResult);
+      }
+
+      // Step 3: Check current English content in index
+      const currentEnglishReports = await typesense
+        .collections("search_content_v2")
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: "locale:=en && entity:=api::report.report",
+          per_page: 10,
+        });
+
+      console.log(
+        `📊 Current English reports in index: ${currentEnglishReports.found}`
+      );
+
+      // Step 4: Check what locales ARE in the index
+      const localeBreakdown = await typesense
+        .collections("search_content_v2")
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: "entity:=api::report.report",
+          per_page: 0,
+          facet_by: "locale",
+        });
+
+      console.log(
+        "📊 Locale breakdown in reports:",
+        localeBreakdown.facet_counts?.[0]?.counts || []
+      );
+
+      // Step 5: Check if it's a batch processing issue
+      console.log("\n🔄 Testing batch processing...");
+
+      const batchTest = englishReports.slice(0, 3);
+      const batchDocs = [];
+
+      for (const report of batchTest) {
+        try {
+          const doc = prepareDocumentWithMedia(report, "api::report.report");
+          batchDocs.push(doc);
+        } catch (error) {
+          console.log(`❌ Batch prep failed for ${report.id}:`, error.message);
+        }
+      }
+
+      let batchResult = null;
+      if (batchDocs.length > 0) {
+        try {
+          const batchImportResult = await typesense
+            .collections("search_content_v2")
+            .documents()
+            .import(batchDocs, { action: "upsert" });
+
+          const batchSucceeded = batchImportResult.filter((r) => r.success);
+          const batchFailed = batchImportResult.filter((r) => !r.success);
+
+          batchResult = {
+            totalDocs: batchDocs.length,
+            succeeded: batchSucceeded.length,
+            failed: batchFailed.length,
+            failureReasons: batchFailed.map((f) => f.error || "Unknown error"),
+          };
+
+          console.log(
+            `📦 Batch test: ${batchSucceeded.length}/${batchDocs.length} succeeded`
+          );
+          if (batchFailed.length > 0) {
+            console.log(`❌ Batch failures:`, batchFailed);
+          }
+        } catch (batchError) {
+          batchResult = { error: batchError.message };
+          console.log(`❌ Batch import failed:`, batchError.message);
+        }
+      }
+
+      return {
+        databaseEnglishReports: englishReports.length,
+        currentIndexEnglishReports: currentEnglishReports.found,
+        localeBreakdownInIndex: localeBreakdown.facet_counts?.[0]?.counts || [],
+        processingResults: processingResults,
+        batchTest: batchResult,
+        sampleEnglishReportsFromIndex: currentEnglishReports.hits.map(
+          (hit) => ({
+            id: hit.document.id,
+            originalId: hit.document.originalId,
+            title: hit.document.title,
+            locale: hit.document.locale,
+          })
+        ),
+        diagnosis: {
+          preparationIssues: processingResults.filter(
+            (r) => !r.preparationSuccess
+          ).length,
+          indexingIssues: processingResults.filter(
+            (r) => r.preparationSuccess && !r.indexingSuccess
+          ).length,
+          searchabilityIssues: processingResults.filter(
+            (r) => r.indexingSuccess && !r.searchableAfterIndex
+          ).length,
+          totalSuccessful: processingResults.filter(
+            (r) => r.searchableAfterIndex
+          ).length,
+        },
+        recommendations: [
+          processingResults.every((r) => !r.preparationSuccess)
+            ? "❌ Document preparation is completely broken"
+            : "✅ Document preparation works",
+          processingResults.some(
+            (r) => r.preparationSuccess && !r.indexingSuccess
+          )
+            ? "❌ Indexing has issues"
+            : "✅ Indexing works when preparation succeeds",
+          currentEnglishReports.found === 0
+            ? "❌ No English content in index - major sync issue"
+            : "✅ English content exists in index",
+          batchResult?.failed > 0
+            ? "❌ Batch processing has issues"
+            : "✅ Batch processing works",
+        ],
+      };
+    } catch (error) {
+      console.error("❌ English indexing debug failed:", error);
+      return ctx.badRequest("Debug failed: " + error.message);
+    }
+  },
+  // Test indexing a single English report manually
+  async manualEnglishReportTest(ctx) {
+    try {
+      // Get the Vietnam Telecom report specifically
+      const vietnamReport = await strapi.db
+        .query("api::report.report")
+        .findOne({
+          where: { id: 2650 }, // The Vietnam Telecom report from your audit
+          populate: {
+            industry: { select: ["name"] },
+            geography: { select: ["name"] },
+            highlightImage: { select: ["url", "alternativeText"] },
+          },
+        });
+
+      if (!vietnamReport) {
+        return { error: "Vietnam Telecom report not found in database" };
+      }
+
+      console.log("📄 Found Vietnam report:", {
+        id: vietnamReport.id,
+        title: vietnamReport.title,
+        locale: vietnamReport.locale,
+        publishedAt: vietnamReport.publishedAt,
+        industry: vietnamReport.industry?.name,
+        geography: vietnamReport.geography?.name,
+      });
+
+      // Manually prepare the document
+      const doc = {
+        id: `${vietnamReport.id}_${vietnamReport.locale || "en"}`,
+        originalId: vietnamReport.id.toString(),
+        title: vietnamReport.title || "",
+        shortDescription:
+          vietnamReport.shortDescription || vietnamReport.description || "",
+        slug: vietnamReport.slug || "",
+        entity: "api::report.report",
+        locale: vietnamReport.locale || "en",
+        highlightImage: vietnamReport.highlightImage?.url || null,
+        industries: vietnamReport.industry ? [vietnamReport.industry.name] : [],
+        geographies: vietnamReport.geography
+          ? [vietnamReport.geography.name]
+          : [],
+        oldPublishedAt: vietnamReport.publishedAt
+          ? new Date(vietnamReport.publishedAt).getTime()
+          : Date.now(),
+        createdAt: vietnamReport.createdAt
+          ? new Date(vietnamReport.createdAt).getTime()
+          : Date.now(),
+      };
+
+      console.log("📝 Prepared document:", JSON.stringify(doc, null, 2));
+
+      // Index it
+      const typesense = getClient();
+      const indexResult = await typesense
+        .collections("search_content_v2")
+        .documents()
+        .upsert(doc);
+
+      console.log("✅ Index result:", indexResult);
+
+      // Verify it's searchable
+      const searchTest = await typesense
+        .collections("search_content_v2")
+        .documents()
+        .search({
+          q: "vietnam telecom market",
+          query_by: "title,shortDescription",
+          filter_by: "locale:=en && entity:=api::report.report",
+          per_page: 5,
+        });
+
+      console.log(`🔍 Search test: ${searchTest.found} results found`);
+
+      return {
+        success: true,
+        vietnamReport: {
+          id: vietnamReport.id,
+          title: vietnamReport.title,
+          locale: vietnamReport.locale,
+        },
+        preparedDocument: doc,
+        indexResult: indexResult,
+        searchTest: {
+          found: searchTest.found,
+          results: searchTest.hits.map((hit) => ({
+            id: hit.document.originalId,
+            title: hit.document.title,
+          })),
+        },
+      };
+    } catch (error) {
+      console.error("❌ Manual test failed:", error);
+      return { error: error.message, stack: error.stack };
     }
   },
 };
