@@ -91,8 +91,8 @@ module.exports = {
     },
     {
       method: "GET",
-      path: "/search/debug-vietnam",
-      handler: "search.debugVietnamSearch",
+      path: "/search/debug-vietnam-report",
+      handler: "search.debugVietnamReportVsNews",
       config: { auth: false },
     },
   ],

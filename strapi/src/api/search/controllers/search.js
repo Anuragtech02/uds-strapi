@@ -2228,134 +2228,192 @@ module.exports = {
     }
   },
   // Add this debug endpoint to test the specific Vietnam Telecom Market case
-  async debugVietnamSearch(ctx) {
+  // Add this debug endpoint to find the specific Vietnam documents
+  async debugVietnamReportVsNews(ctx) {
     try {
       const typesense = getClient();
 
-      console.log("🇻🇳 DEBUG: Testing Vietnam Telecom Market search...");
+      console.log("🇻🇳 DEBUG: Vietnam Report vs News Analysis");
 
-      // First, let's see if the document exists in the index
-      const allReportsSearch = await typesense
+      // Search for ALL Vietnam documents without entity filter
+      const allVietnamSearch = await typesense
         .collections("search_content_v2")
         .documents()
         .search({
-          q: "*",
-          query_by: "title",
-          filter_by: "entity:=api::report.report",
-          per_page: 100,
+          q: "vietnam",
+          query_by: "title,shortDescription",
+          filter_by: "locale:=en",
+          per_page: 50,
         });
 
-      // Look for Vietnam documents
-      const vietnamDocs = allReportsSearch.hits.filter((hit) =>
-        hit.document.title?.toLowerCase().includes("vietnam")
+      console.log(
+        `📊 Total Vietnam documents found: ${allVietnamSearch.found}`
       );
 
-      console.log(
-        `📊 Found ${vietnamDocs.length} documents containing 'vietnam':`
-      );
-      vietnamDocs.forEach((hit, index) => {
+      // Group by entity type
+      const byEntity = {};
+      const vietnamTelecomDocs = [];
+
+      allVietnamSearch.hits.forEach((hit) => {
+        const doc = hit.document;
+        const entity = doc.entity;
+
+        if (!byEntity[entity]) {
+          byEntity[entity] = [];
+        }
+        byEntity[entity].push({
+          id: doc.id,
+          originalId: doc.originalId,
+          title: doc.title,
+          entity: doc.entity,
+        });
+
+        // Look for telecom-related Vietnam docs
+        if (doc.title?.toLowerCase().includes("telecom")) {
+          vietnamTelecomDocs.push({
+            id: doc.id,
+            originalId: doc.originalId,
+            title: doc.title,
+            entity: doc.entity,
+            shortDescription: doc.shortDescription,
+          });
+        }
+      });
+
+      console.log("📊 Vietnam documents by entity:");
+      Object.entries(byEntity).forEach(([entity, docs]) => {
+        console.log(`  ${entity}: ${docs.length} documents`);
+      });
+
+      console.log("📊 Vietnam Telecom documents found:");
+      vietnamTelecomDocs.forEach((doc, index) => {
         console.log(
-          `  ${index + 1}. "${hit.document.title}" (ID: ${hit.document.id})`
+          `  ${index + 1}. [${doc.entity}] "${doc.title}" (ID: ${
+            doc.originalId
+          })`
         );
       });
 
-      // Test different search variations
-      const searchVariations = [
-        "Vietnam Telecom Market",
-        "vietnam telecom market",
-        "Vietnam+Telecom+Market",
-        "vietnam",
-        "telecom",
-        "market",
-        "Vietnam Telecom",
-        "Telecom Market",
+      // Now specifically search for your expected report title
+      const specificReportSearch = await typesense
+        .collections("search_content_v2")
+        .documents()
+        .search({
+          q: "Vietnam Telecom Market Current Analysis Forecast 2023 2030",
+          query_by: "title,shortDescription",
+          filter_by: "locale:=en && entity:=api::report.report",
+          per_page: 10,
+        });
+
+      console.log(
+        `🔍 Specific report search found: ${specificReportSearch.found} results`
+      );
+
+      // Check if the report exists by searching for partial terms
+      const partialSearches = [
+        "Current Analysis Forecast 2023",
+        "Vietnam Telecom Current Analysis",
+        "Telecom Market Current Analysis",
+        "Analysis and Forecast 2023-2030",
       ];
 
-      const results = {};
-
-      for (const searchTerm of searchVariations) {
+      const partialResults = {};
+      for (const term of partialSearches) {
         try {
-          const searchResult = await typesense
+          const result = await typesense
             .collections("search_content_v2")
             .documents()
             .search({
-              q: searchTerm,
+              q: term,
               query_by: "title,shortDescription",
-              filter_by: "locale:=en",
-              per_page: 10,
+              filter_by: "locale:=en && entity:=api::report.report",
+              per_page: 5,
             });
 
-          results[searchTerm] = {
-            found: searchResult.found,
-            hits: searchResult.hits.slice(0, 3).map((hit) => ({
-              id: hit.document.id,
+          partialResults[term] = {
+            found: result.found,
+            hits: result.hits.map((hit) => ({
+              id: hit.document.originalId,
               title: hit.document.title,
-              score: hit.text_match_info?.score || 0,
             })),
           };
-
-          console.log(`🔍 "${searchTerm}": ${searchResult.found} results`);
         } catch (error) {
-          results[searchTerm] = { error: error.message };
-          console.log(`❌ "${searchTerm}": Error - ${error.message}`);
+          partialResults[term] = { error: error.message };
         }
       }
 
-      // Also test with URL decoding
-      const encodedTerm = "Vietnam+Telecom+Market";
-      const decodedTerm = decodeURIComponent(encodedTerm).replace(/\+/g, " ");
-
-      console.log(`🔄 URL decoding test:`);
-      console.log(`  Encoded: "${encodedTerm}"`);
-      console.log(`  Decoded: "${decodedTerm}"`);
-
+      // Check database for the report that should exist
+      console.log("🗄️ Checking database for Vietnam Telecom reports...");
+      let dbReports = [];
       try {
-        const decodedSearchResult = await typesense
-          .collections("search_content_v2")
-          .documents()
-          .search({
-            q: decodedTerm,
-            query_by: "title,shortDescription",
-            filter_by: "locale:=en",
-            per_page: 10,
-          });
+        const dbResults = await strapi.db.query("api::report.report").findMany({
+          select: ["id", "title", "locale", "publishedAt", "oldPublishedAt"],
+          filters: {
+            title: { $containsi: "vietnam" },
+            locale: "en",
+            $or: [
+              { publishedAt: { $notNull: true } },
+              { published_at: { $notNull: true } },
+            ],
+          },
+          limit: 10,
+        });
 
-        results["decoded_vietnam_telecom_market"] = {
-          found: decodedSearchResult.found,
-          hits: decodedSearchResult.hits.slice(0, 3).map((hit) => ({
-            id: hit.document.id,
-            title: hit.document.title,
-            score: hit.text_match_info?.score || 0,
-          })),
-        };
-      } catch (error) {
-        results["decoded_vietnam_telecom_market"] = { error: error.message };
+        dbReports = dbResults.map((r) => ({
+          id: r.id,
+          title: r.title,
+          locale: r.locale,
+          publishedAt: r.publishedAt || r.oldPublishedAt,
+        }));
+
+        console.log(`📊 Database Vietnam reports: ${dbReports.length}`);
+        dbReports.forEach((report, index) => {
+          console.log(`  ${index + 1}. "${report.title}" (ID: ${report.id})`);
+        });
+      } catch (dbError) {
+        console.error("Database query error:", dbError);
+        dbReports = [{ error: "Database query failed" }];
       }
 
       return {
-        totalReports: allReportsSearch.found,
-        vietnamDocsFound: vietnamDocs.length,
-        vietnamDocuments: vietnamDocs.map((hit) => ({
-          id: hit.document.id,
-          title: hit.document.title,
-          shortDescription:
-            hit.document.shortDescription?.substring(0, 100) + "...",
-        })),
-        searchTests: results,
+        summary: {
+          totalVietnamDocs: allVietnamSearch.found,
+          vietnamTelecomDocs: vietnamTelecomDocs.length,
+          entityBreakdown: Object.entries(byEntity).map(([entity, docs]) => ({
+            entity,
+            count: docs.length,
+          })),
+          databaseReports: dbReports.length,
+        },
+        vietnamTelecomDocuments: vietnamTelecomDocs,
+        specificReportSearch: {
+          found: specificReportSearch.found,
+          results: specificReportSearch.hits.map((hit) => ({
+            id: hit.document.originalId,
+            title: hit.document.title,
+          })),
+        },
+        partialSearchResults: partialResults,
+        databaseReports: dbReports,
         recommendations: [
-          vietnamDocs.length === 0
-            ? "❌ No Vietnam documents found in index"
-            : "✅ Vietnam documents exist",
-          results["Vietnam Telecom Market"]?.found > 0
-            ? "✅ Exact search works"
-            : "❌ Exact search fails",
-          results["vietnam"]?.found > 0
-            ? "✅ Single word search works"
-            : "❌ Single word search fails",
+          vietnamTelecomDocs.length === 0
+            ? "❌ No Vietnam Telecom docs in search index"
+            : "✅ Vietnam Telecom docs exist",
+          vietnamTelecomDocs.some((d) => d.entity === "api::report.report")
+            ? "✅ Vietnam Telecom reports indexed"
+            : "❌ No Vietnam Telecom reports in index",
+          dbReports.length >
+          vietnamTelecomDocs.filter((d) => d.entity === "api::report.report")
+            .length
+            ? "⚠️ Database has more reports than search index"
+            : "✅ Search index matches database",
+          specificReportSearch.found === 0
+            ? "❌ Your specific report not found - may need re-indexing"
+            : "✅ Specific report found",
         ],
       };
     } catch (error) {
-      console.error("Vietnam search debug error:", error);
+      console.error("Vietnam debug error:", error);
       return ctx.badRequest("Debug failed: " + error.message);
     }
   },
