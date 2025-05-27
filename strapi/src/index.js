@@ -44,7 +44,14 @@ module.exports = {
         );
         collectionExists = true;
       } catch (collectionError) {
-        if (collectionError.httpStatus === 404) {
+        // Check for 404 error (collection doesn't exist) - handle different error formats
+        const is404Error =
+          collectionError.httpStatus === 404 ||
+          collectionError.message?.includes("404") ||
+          collectionError.message?.includes("Not Found") ||
+          collectionError.constructor.name === "ObjectNotFound";
+
+        if (is404Error) {
           console.log(`📝 Creating search collection '${COLLECTION_NAME}'...`);
           try {
             await createCollection();
