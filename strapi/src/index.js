@@ -33,6 +33,7 @@ module.exports = {
       console.log("✅ Typesense connection healthy:", health);
 
       // Check if collection exists, create if needed
+      let collectionExists = false;
       try {
         const existingCollection = await typesense
           .collections(COLLECTION_NAME)
@@ -41,13 +42,31 @@ module.exports = {
         console.log(
           `📊 Collection has ${existingCollection.num_documents} documents`
         );
+        collectionExists = true;
       } catch (collectionError) {
         if (collectionError.httpStatus === 404) {
           console.log(`📝 Creating search collection '${COLLECTION_NAME}'...`);
-          await createCollection();
+          try {
+            await createCollection();
+            console.log(
+              `✅ Search collection '${COLLECTION_NAME}' created successfully`
+            );
+            collectionExists = true;
+          } catch (createError) {
+            console.error("❌ Failed to create collection:", createError);
+            throw createError;
+          }
         } else {
+          console.error(
+            "❌ Unexpected error checking collection:",
+            collectionError
+          );
           throw collectionError;
         }
+      }
+
+      if (!collectionExists) {
+        throw new Error("Collection not available");
       }
     } catch (initError) {
       console.error("❌ Typesense initialization failed:", initError);
@@ -63,14 +82,23 @@ module.exports = {
 
         // Check if we need a full sync
         const typesense = getClient();
-        const currentCount = await typesense
-          .collections(COLLECTION_NAME)
-          .documents()
-          .search({
-            q: "*",
-            query_by: "title",
-            per_page: 0,
-          });
+        let currentCount;
+        try {
+          currentCount = await typesense
+            .collections(COLLECTION_NAME)
+            .documents()
+            .search({
+              q: "*",
+              query_by: "title",
+              per_page: 0,
+            });
+        } catch (searchError) {
+          console.warn(
+            "⚠️ Could not check current index count:",
+            searchError.message
+          );
+          currentCount = { found: 0 };
+        }
 
         console.log(
           `📊 Current search index has ${currentCount.found} documents`
