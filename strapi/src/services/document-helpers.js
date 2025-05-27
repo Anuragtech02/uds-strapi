@@ -1,4 +1,4 @@
-export function createUniqueDocumentId(item, entityType) {
+function createUniqueDocumentId(item, entityType) {
   // Extract entity type suffix for shorter IDs
   const entitySuffix = entityType.split("::")[1]?.split(".")[0] || "unknown";
 
@@ -419,4 +419,5 @@ module.exports = {
   prepareNewsDocument,
   prepareDocumentForIndexing,
   prepareDocumentWithMedia,
+  createUniqueDocumentId,
 };
