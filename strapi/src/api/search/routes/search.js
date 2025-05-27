@@ -83,5 +83,11 @@ module.exports = {
       handler: "search.syncAllClean",
       config: { auth: false },
     },
+    {
+      method: "GET",
+      path: "/search/debug-dates",
+      handler: "search.debugDateFormats",
+      config: { auth: false },
+    },
   ],
 };

@@ -229,6 +229,7 @@ module.exports = {
   // Search API for frontend
   // Fixed search method with better error handling and debugging
 
+  // Fixed search method with proper sorting
   async search(ctx) {
     try {
       const {
@@ -247,7 +248,7 @@ module.exports = {
       const typesense = getClient();
 
       // Determine the correct collection name
-      let collectionName = "search_content_v2"; // Your logs show this collection exists
+      let collectionName = "search_content_v2";
 
       // Verify collection exists, fallback if needed
       try {
@@ -310,14 +311,19 @@ module.exports = {
         }
       }
 
-      // Handle sort parameter more robustly
-      let sortBy = "oldPublishedAt:desc"; // Default
+      // FIXED: Handle sort parameter with proper defaults
+      let sortBy = "oldPublishedAt:desc"; // Always default to date desc
+
       if (sort) {
         switch (sort.toLowerCase()) {
           case "relevance":
-            sortBy = isEmptySearch
-              ? "oldPublishedAt:desc"
-              : "_text_match:desc,oldPublishedAt:desc";
+            // For relevance, only use text match if there's actual search term
+            if (!isEmptySearch) {
+              sortBy = "_text_match:desc,oldPublishedAt:desc";
+            } else {
+              // For empty search, relevance = date desc
+              sortBy = "oldPublishedAt:desc";
+            }
             break;
           case "date_desc":
           case "oldpublishedat:desc":
@@ -334,8 +340,12 @@ module.exports = {
             sortBy = "createdAt:asc";
             break;
           default:
+            // Validate custom sort format
             if (sort.match(/^[a-zA-Z_]+:(asc|desc)$/)) {
               sortBy = sort;
+            } else {
+              // Invalid sort format, use default
+              sortBy = "oldPublishedAt:desc";
             }
         }
       }
@@ -345,18 +355,19 @@ module.exports = {
         q: isEmptySearch ? "*" : term,
         query_by: "title,shortDescription",
         filter_by: filterBy,
-        per_page: Math.min(parseInt(pageSize, 10), 100), // Limit max page size
-        page: Math.max(parseInt(page, 10), 1), // Ensure page is at least 1
-        sort_by: sortBy,
+        per_page: Math.min(parseInt(pageSize, 10), 100),
+        page: Math.max(parseInt(page, 10), 1),
+        sort_by: sortBy, // This is the key fix
       };
 
       // Add additional parameters for better search experience
       if (!isEmptySearch) {
-        searchParams.typo_tokens_threshold = 1; // Allow some typos
-        searchParams.drop_tokens_threshold = 1; // Allow dropping tokens for better results
+        searchParams.typo_tokens_threshold = 1;
+        searchParams.drop_tokens_threshold = 1;
       }
 
       console.log("🔍 Search params:", JSON.stringify(searchParams, null, 2));
+      console.log("📊 SORTING BY:", sortBy); // Debug log
 
       // Execute main search
       const searchResults = await typesense
@@ -368,13 +379,30 @@ module.exports = {
         `📊 Search results: ${searchResults.found} found, ${searchResults.hits.length} returned`
       );
 
-      // Debug: Log entity breakdown in results
-      const entityBreakdown = {};
-      searchResults.hits.forEach((hit) => {
-        const entity = hit.document.entity;
-        entityBreakdown[entity] = (entityBreakdown[entity] || 0) + 1;
+      // Debug: Log the first few results with their dates
+      console.log("🗓️ SORT DEBUG - First 3 results:");
+      searchResults.hits.slice(0, 3).forEach((hit, index) => {
+        const doc = hit.document;
+        let dateStr = "No date";
+        if (doc.oldPublishedAt) {
+          try {
+            if (
+              typeof doc.oldPublishedAt === "string" &&
+              doc.oldPublishedAt.includes("T")
+            ) {
+              dateStr = doc.oldPublishedAt;
+            } else {
+              const timestamp = parseInt(doc.oldPublishedAt);
+              if (!isNaN(timestamp)) {
+                dateStr = new Date(timestamp).toISOString();
+              }
+            }
+          } catch (dateError) {
+            dateStr = `Invalid: ${doc.oldPublishedAt}`;
+          }
+        }
+        console.log(`  ${index + 1}. "${doc.title}" - Published: ${dateStr}`);
       });
-      console.log("📊 Entity breakdown in results:", entityBreakdown);
 
       // Initialize counts
       const counts = {
@@ -436,8 +464,6 @@ module.exports = {
               .search(countParams);
 
             counts[entityType.key] = countResult.found;
-
-            console.log(`📊 ${entityType.tab} count: ${countResult.found}`);
           } catch (countError) {
             console.error(
               `Error getting count for ${entityType.key}:`,
@@ -452,7 +478,7 @@ module.exports = {
         data: searchResults.hits.map((hit) => {
           const doc = hit.document;
 
-          // Handle date conversion
+          // FIXED: Handle date conversion properly
           let oldPublishedAt = null;
           if (doc.oldPublishedAt) {
             try {
@@ -460,8 +486,10 @@ module.exports = {
                 typeof doc.oldPublishedAt === "string" &&
                 doc.oldPublishedAt.includes("T")
               ) {
+                // Already ISO string
                 oldPublishedAt = doc.oldPublishedAt;
               } else {
+                // Convert timestamp to ISO string
                 const timestamp = parseInt(doc.oldPublishedAt);
                 if (!isNaN(timestamp)) {
                   oldPublishedAt = new Date(timestamp).toISOString();
@@ -489,7 +517,6 @@ module.exports = {
             baseResult.geographies =
               doc.geographies?.map((name) => ({ name })) || [];
           }
-          // For blogs and news, no highlightImage or geographies
 
           return baseResult;
         }),
@@ -501,31 +528,12 @@ module.exports = {
             total: searchResults.found,
             allCounts: counts,
           },
+          sorting: {
+            appliedSort: sortBy,
+            requestedSort: sort,
+          },
         },
       };
-
-      // Debug log for blog-specific issues
-      if (tab === "blogs" && formattedResults.data.length === 0) {
-        console.log("🚨 BLOG DEBUG: No blogs returned");
-        console.log("🚨 Filter used:", filterBy);
-        console.log("🚨 Query used:", searchParams.q);
-
-        // Try a simple blog test
-        try {
-          const simpleTest = await typesense
-            .collections(collectionName)
-            .documents()
-            .search({
-              q: "*",
-              query_by: "title",
-              filter_by: `entity:=api::blog.blog`,
-              per_page: 5,
-            });
-          console.log("🚨 Simple blog test found:", simpleTest.found);
-        } catch (testError) {
-          console.log("🚨 Simple blog test failed:", testError.message);
-        }
-      }
 
       return formattedResults;
     } catch (error) {
@@ -2104,6 +2112,89 @@ module.exports = {
     } catch (error) {
       console.error("❌ Full sync failed:", error);
       throw error;
+    }
+  },
+  // Add this debug endpoint to check date formats in your search controller
+  async debugDateFormats(ctx) {
+    try {
+      const typesense = getClient();
+
+      // Get a sample of documents to check their date formats
+      const sampleResults = await typesense
+        .collections("search_content_v2")
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: "locale:=en",
+          per_page: 20,
+          sort_by: "oldPublishedAt:desc",
+        });
+
+      const dateAnalysis = sampleResults.hits.map((hit, index) => {
+        const doc = hit.document;
+
+        return {
+          index: index + 1,
+          id: doc.id,
+          title: doc.title?.substring(0, 50) + "...",
+          entity: doc.entity,
+          oldPublishedAtRaw: doc.oldPublishedAt,
+          oldPublishedAtType: typeof doc.oldPublishedAt,
+          oldPublishedAtParsed: (() => {
+            if (!doc.oldPublishedAt) return "null";
+
+            try {
+              if (
+                typeof doc.oldPublishedAt === "string" &&
+                doc.oldPublishedAt.includes("T")
+              ) {
+                return new Date(doc.oldPublishedAt).toISOString();
+              } else {
+                const timestamp = parseInt(doc.oldPublishedAt);
+                if (!isNaN(timestamp)) {
+                  return new Date(timestamp).toISOString();
+                }
+              }
+              return "unparseable";
+            } catch (error) {
+              return `error: ${error.message}`;
+            }
+          })(),
+          createdAtRaw: doc.createdAt,
+          createdAtType: typeof doc.createdAt,
+        };
+      });
+
+      // Check if dates are actually in sort order
+      const datesInOrder = dateAnalysis.every((item, index) => {
+        if (index === 0) return true;
+        const currentDate = new Date(item.oldPublishedAtParsed);
+        const previousDate = new Date(
+          dateAnalysis[index - 1].oldPublishedAtParsed
+        );
+        return currentDate <= previousDate; // Should be descending
+      });
+
+      return {
+        totalFound: sampleResults.found,
+        sortedCorrectly: datesInOrder,
+        sampleDocuments: dateAnalysis,
+        recommendations: [
+          !datesInOrder
+            ? "❌ Dates are not in correct sort order"
+            : "✅ Dates are sorted correctly",
+          dateAnalysis.some((d) => d.oldPublishedAtType !== "number")
+            ? "⚠️ Mixed date field types detected"
+            : "✅ Consistent date field types",
+          dateAnalysis.some((d) => d.oldPublishedAtParsed === "null")
+            ? "⚠️ Some documents missing oldPublishedAt"
+            : "✅ All documents have oldPublishedAt",
+        ],
+      };
+    } catch (error) {
+      console.error("Date format debug error:", error);
+      return ctx.badRequest("Date format debug failed: " + error.message);
     }
   },
 };

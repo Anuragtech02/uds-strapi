@@ -103,6 +103,7 @@ function prepareDocument(item, entityType) {
   return doc;
 }
 
+// FIXED: Date handling in prepareDocumentWithMedia function
 function prepareDocumentWithMedia(item, entityType) {
   // Create base document structure
   const doc = {
@@ -113,46 +114,35 @@ function prepareDocumentWithMedia(item, entityType) {
     slug: item.slug || "",
     entity: entityType,
     locale: item.locale || "en",
-    highlightImage: null, // Will be string or null
+    highlightImage: null,
   };
 
-  // ONLY handle highlightImage for reports, with better error handling
+  // Handle highlightImage for reports only (your existing logic)
   if (entityType === "api::report.report" && item.highlightImage) {
     try {
       let imageUrl = null;
-
       if (
         typeof item.highlightImage === "object" &&
         item.highlightImage !== null
       ) {
-        // Handle different Strapi media formats
         if (item.highlightImage.url) {
-          // Direct format: { url: "...", alternativeText: "..." }
           imageUrl = item.highlightImage.url;
         } else if (item.highlightImage.data?.attributes?.url) {
-          // Strapi v4 format: { data: { attributes: { url: "..." } } }
           imageUrl = item.highlightImage.data.attributes.url;
         } else if (
           Array.isArray(item.highlightImage) &&
           item.highlightImage[0]?.url
         ) {
-          // Array format (shouldn't happen with multiple: false)
           imageUrl = item.highlightImage[0].url;
         }
       } else if (typeof item.highlightImage === "string") {
-        // Already a URL string
         imageUrl = item.highlightImage;
       }
 
-      // Validate and clean the URL
       if (imageUrl && typeof imageUrl === "string" && imageUrl.trim()) {
         doc.highlightImage = imageUrl.trim();
-        console.log(
-          `🖼️ Report ${item.id} highlightImage: ${doc.highlightImage}`
-        );
       } else {
         doc.highlightImage = null;
-        console.log(`⚠️ Report ${item.id} has invalid highlightImage format`);
       }
     } catch (imageError) {
       console.warn(
@@ -162,47 +152,106 @@ function prepareDocumentWithMedia(item, entityType) {
       doc.highlightImage = null;
     }
   } else {
-    // For blogs and news, explicitly set to null
     doc.highlightImage = null;
   }
 
-  // Handle publication dates
+  // FIXED: Publication date handling with consistent timestamp conversion
   const dateFields = ["oldPublishedAt", "publishedAt", "published_at"];
+  let foundValidDate = false;
+
   for (const field of dateFields) {
-    if (item[field]) {
+    if (item[field] && !foundValidDate) {
       try {
-        doc.oldPublishedAt = new Date(item[field]).getTime();
-        break;
+        let timestamp;
+        const dateValue = item[field];
+
+        if (typeof dateValue === "string") {
+          // Parse string date to timestamp
+          const parsedDate = new Date(dateValue);
+          if (!isNaN(parsedDate.getTime())) {
+            timestamp = parsedDate.getTime();
+          }
+        } else if (typeof dateValue === "number") {
+          // Already a timestamp, but validate it
+          if (dateValue > 0) {
+            timestamp = dateValue;
+          }
+        } else if (dateValue instanceof Date) {
+          // Date object
+          timestamp = dateValue.getTime();
+        }
+
+        if (timestamp && timestamp > 0) {
+          doc.oldPublishedAt = timestamp; // Always store as number (timestamp)
+          foundValidDate = true;
+
+          // Debug log to verify date conversion
+          console.log(
+            `📅 ${entityType} ${
+              item.id
+            }: ${field} = ${dateValue} -> ${timestamp} (${new Date(
+              timestamp
+            ).toISOString()})`
+          );
+          break;
+        }
       } catch (dateError) {
         console.warn(
-          `Invalid date in field ${field} for item ${item.id}:`,
-          item[field]
+          `⚠️ Invalid date in field ${field} for item ${item.id}:`,
+          dateError.message
         );
       }
     }
   }
 
-  // Handle creation date
-  if (item.createdAt) {
-    try {
-      doc.createdAt = new Date(item.createdAt).getTime();
-    } catch (dateError) {
-      console.warn(`Invalid createdAt for item ${item.id}:`, item.createdAt);
+  if (!foundValidDate) {
+    console.warn(
+      `⚠️ No valid publication date found for ${entityType} ${item.id}`
+    );
+    // Use creation date as fallback or current time
+    if (item.createdAt) {
+      try {
+        const createdTimestamp = new Date(item.createdAt).getTime();
+        doc.oldPublishedAt = createdTimestamp;
+        console.log(
+          `📅 Using createdAt as fallback for ${entityType} ${item.id}`
+        );
+      } catch (createdError) {
+        doc.oldPublishedAt = Date.now(); // Last resort: current time
+        console.warn(
+          `⚠️ Using current time as fallback for ${entityType} ${item.id}`
+        );
+      }
+    } else {
+      doc.oldPublishedAt = Date.now();
     }
   }
 
-  // Handle industries with error handling
+  // FIXED: Creation date handling
+  if (item.createdAt) {
+    try {
+      const createdTimestamp = new Date(item.createdAt).getTime();
+      if (!isNaN(createdTimestamp)) {
+        doc.createdAt = createdTimestamp; // Always store as number (timestamp)
+      }
+    } catch (dateError) {
+      console.warn(
+        `⚠️ Invalid createdAt for item ${item.id}:`,
+        dateError.message
+      );
+    }
+  }
+
+  // Handle industries and geographies (your existing logic)
   doc.industries = [];
   try {
     if (item.industry) {
-      // Single industry (reports)
       const industryName =
         typeof item.industry === "string" ? item.industry : item.industry.name;
       if (industryName) {
         doc.industries = [industryName];
       }
     } else if (item.industries && Array.isArray(item.industries)) {
-      // Multiple industries (blogs)
       doc.industries = item.industries
         .map((industry) =>
           typeof industry === "string" ? industry : industry.name
@@ -217,11 +266,9 @@ function prepareDocumentWithMedia(item, entityType) {
     doc.industries = [];
   }
 
-  // Handle geographies with error handling (only reports have geographies)
   doc.geographies = [];
   try {
     if (entityType === "api::report.report" && item.geography) {
-      // Single geography (reports)
       const geographyName =
         typeof item.geography === "string"
           ? item.geography
