@@ -631,7 +631,7 @@ async function handleContentDelete(event) {
 
   try {
     const typesense = getClient();
-    const documentId = `${entry.id}_${entry.locale || "en"}`;
+    const documentId = createUniqueDocumentId(entry, model);
 
     await typesense.collections(COLLECTION_NAME).documents(documentId).delete();
 
