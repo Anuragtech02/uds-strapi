@@ -89,5 +89,11 @@ module.exports = {
       handler: "search.debugDateFormats",
       config: { auth: false },
     },
+    {
+      method: "GET",
+      path: "/search/debug-vietnam",
+      handler: "search.debugVietnamSearch",
+      config: { auth: false },
+    },
   ],
 };

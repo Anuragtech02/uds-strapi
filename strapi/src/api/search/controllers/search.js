@@ -2218,4 +2218,136 @@ module.exports = {
       return ctx.badRequest("Date format debug failed: " + error.message);
     }
   },
+  // Add this debug endpoint to test the specific Vietnam Telecom Market case
+  async debugVietnamSearch(ctx) {
+    try {
+      const typesense = getClient();
+
+      console.log("🇻🇳 DEBUG: Testing Vietnam Telecom Market search...");
+
+      // First, let's see if the document exists in the index
+      const allReportsSearch = await typesense
+        .collections("search_content_v2")
+        .documents()
+        .search({
+          q: "*",
+          query_by: "title",
+          filter_by: "entity:=api::report.report",
+          per_page: 100,
+        });
+
+      // Look for Vietnam documents
+      const vietnamDocs = allReportsSearch.hits.filter((hit) =>
+        hit.document.title?.toLowerCase().includes("vietnam")
+      );
+
+      console.log(
+        `📊 Found ${vietnamDocs.length} documents containing 'vietnam':`
+      );
+      vietnamDocs.forEach((hit, index) => {
+        console.log(
+          `  ${index + 1}. "${hit.document.title}" (ID: ${hit.document.id})`
+        );
+      });
+
+      // Test different search variations
+      const searchVariations = [
+        "Vietnam Telecom Market",
+        "vietnam telecom market",
+        "Vietnam+Telecom+Market",
+        "vietnam",
+        "telecom",
+        "market",
+        "Vietnam Telecom",
+        "Telecom Market",
+      ];
+
+      const results = {};
+
+      for (const searchTerm of searchVariations) {
+        try {
+          const searchResult = await typesense
+            .collections("search_content_v2")
+            .documents()
+            .search({
+              q: searchTerm,
+              query_by: "title,shortDescription",
+              filter_by: "locale:=en",
+              per_page: 10,
+            });
+
+          results[searchTerm] = {
+            found: searchResult.found,
+            hits: searchResult.hits.slice(0, 3).map((hit) => ({
+              id: hit.document.id,
+              title: hit.document.title,
+              score: hit.text_match_info?.score || 0,
+            })),
+          };
+
+          console.log(`🔍 "${searchTerm}": ${searchResult.found} results`);
+        } catch (error) {
+          results[searchTerm] = { error: error.message };
+          console.log(`❌ "${searchTerm}": Error - ${error.message}`);
+        }
+      }
+
+      // Also test with URL decoding
+      const encodedTerm = "Vietnam+Telecom+Market";
+      const decodedTerm = decodeURIComponent(encodedTerm).replace(/\+/g, " ");
+
+      console.log(`🔄 URL decoding test:`);
+      console.log(`  Encoded: "${encodedTerm}"`);
+      console.log(`  Decoded: "${decodedTerm}"`);
+
+      try {
+        const decodedSearchResult = await typesense
+          .collections("search_content_v2")
+          .documents()
+          .search({
+            q: decodedTerm,
+            query_by: "title,shortDescription",
+            filter_by: "locale:=en",
+            per_page: 10,
+          });
+
+        results["decoded_vietnam_telecom_market"] = {
+          found: decodedSearchResult.found,
+          hits: decodedSearchResult.hits.slice(0, 3).map((hit) => ({
+            id: hit.document.id,
+            title: hit.document.title,
+            score: hit.text_match_info?.score || 0,
+          })),
+        };
+      } catch (error) {
+        results["decoded_vietnam_telecom_market"] = { error: error.message };
+      }
+
+      return {
+        totalReports: allReportsSearch.found,
+        vietnamDocsFound: vietnamDocs.length,
+        vietnamDocuments: vietnamDocs.map((hit) => ({
+          id: hit.document.id,
+          title: hit.document.title,
+          shortDescription:
+            hit.document.shortDescription?.substring(0, 100) + "...",
+        })),
+        searchTests: results,
+        recommendations: [
+          vietnamDocs.length === 0
+            ? "❌ No Vietnam documents found in index"
+            : "✅ Vietnam documents exist",
+          results["Vietnam Telecom Market"]?.found > 0
+            ? "✅ Exact search works"
+            : "❌ Exact search fails",
+          results["vietnam"]?.found > 0
+            ? "✅ Single word search works"
+            : "❌ Single word search fails",
+        ],
+      };
+    } catch (error) {
+      console.error("Vietnam search debug error:", error);
+      return ctx.badRequest("Debug failed: " + error.message);
+    }
+  },
 };
