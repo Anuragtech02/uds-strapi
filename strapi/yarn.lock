@@ -3655,7 +3655,7 @@
     semver "7.5.4"
     umzug "3.2.1"
 
-"@strapi/design-system@^1.18.0", "@strapi/design-system@^1.19.0", "@strapi/design-system@^1.6.3", "@strapi/design-system@^1.9.0", "@strapi/design-system@1.19.0":
+"@strapi/design-system@^1.19.0", "@strapi/design-system@^1.6.3", "@strapi/design-system@^1.9.0", "@strapi/design-system@1.19.0":
   version "1.19.0"
   resolved "https://registry.npmjs.org/@strapi/design-system/-/design-system-1.19.0.tgz"
   integrity sha512-kEQNaRztIcr6I5Zh6mxtE/Nmkk1mylCS5s56ySKDdqOjWZw2BCbS72/J9k6r1RF1TLIDSXJN9r5dHR0ZKtWvBQ==
@@ -3722,7 +3722,7 @@
     react-query "3.39.3"
     react-select "5.7.0"
 
-"@strapi/icons@^1.11.0", "@strapi/icons@^1.18.0", "@strapi/icons@^1.5.0", "@strapi/icons@^1.9.0", "@strapi/icons@1.19.0":
+"@strapi/icons@^1.11.0", "@strapi/icons@^1.5.0", "@strapi/icons@^1.9.0", "@strapi/icons@1.19.0":
   version "1.19.0"
   resolved "https://registry.npmjs.org/@strapi/icons/-/icons-1.19.0.tgz"
   integrity sha512-jcS7n3Ps+73fYGadxdaD6owazoDJKN1fHSG9dp8RX4RqkP6BfoHOX5j3aodVLmDX57Ksg6gy5JXf9xEml7nMpQ==
@@ -4104,7 +4104,7 @@
     aria-hidden "^1.2.4"
     react-remove-scroll "^2.5.9"
 
-"@strapi/utils@^4.13.1", "@strapi/utils@^4.14.0", "@strapi/utils@^4.24.0", "@strapi/utils@4.25.8":
+"@strapi/utils@^4.13.1", "@strapi/utils@^4.14.0", "@strapi/utils@4.25.8":
   version "4.25.8"
   resolved "https://registry.npmjs.org/@strapi/utils/-/utils-4.25.8.tgz"
   integrity sha512-cyz18XLqhHKLIdEbwkL+7emCu3tViDUyRittGEFaOPfMnxSmlJ1dDVmZ8BJ7HFhx1KXcylrYju8I/5/NG3S6SQ==
@@ -6126,13 +6126,6 @@ cross-env@^7.0.3:
   integrity sha512-+/HKd6EgcQCJGh2PSjZuUitQBQynKor4wrFbRg4DtAgS1aWO+gU52xpH7M9ScGgXSYmAVS9bIJ8EzuaGw0oNAw==
   dependencies:
     cross-spawn "^7.0.1"
-
-cross-fetch@^3.1.6:
-  version "3.1.8"
-  resolved "https://registry.npmjs.org/cross-fetch/-/cross-fetch-3.1.8.tgz"
-  integrity sha512-cvA+JwZoU0Xq+h6WkMvAUqPEYy92Obet6UdKLfW60qn99ftItKjB5T+BkyWOFWe2pUyfQ+IJHmpOTznqk1M6Kg==
-  dependencies:
-    node-fetch "^2.6.12"
 
 cross-spawn@^7.0.0, cross-spawn@^7.0.1, cross-spawn@^7.0.2, cross-spawn@^7.0.3:
   version "7.0.3"
@@ -9482,13 +9475,6 @@ media-typer@0.3.0:
   resolved "https://registry.npmjs.org/media-typer/-/media-typer-0.3.0.tgz"
   integrity sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==
 
-meilisearch@^0.38.0:
-  version "0.38.0"
-  resolved "https://registry.npmjs.org/meilisearch/-/meilisearch-0.38.0.tgz"
-  integrity sha512-bHaq8nYxSKw9/Qslq1Zes5g9tHgFkxy/I9o8942wv2PqlNOT0CzptIkh/x98N52GikoSZOXSQkgt6oMjtf5uZw==
-  dependencies:
-    cross-fetch "^3.1.6"
-
 memfs@^3.4.1, memfs@^3.4.12:
   version "3.6.0"
   resolved "https://registry.npmjs.org/memfs/-/memfs-3.6.0.tgz"
@@ -9844,13 +9830,6 @@ node-domexception@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/node-domexception/-/node-domexception-1.0.0.tgz"
   integrity sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==
-
-node-fetch@^2.6.12:
-  version "2.7.0"
-  resolved "https://registry.npmjs.org/node-fetch/-/node-fetch-2.7.0.tgz"
-  integrity sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==
-  dependencies:
-    whatwg-url "^5.0.0"
 
 node-fetch@^3.3.2:
   version "3.3.2"
@@ -12237,16 +12216,6 @@ strapi-plugin-import-export-entries@^1.23.1:
     monaco-editor-webpack-plugin "7.0.1"
     node-fetch "2.6.9"
     react-singleton-hook "3.3.0"
-
-strapi-plugin-meilisearch@^0.12.0:
-  version "0.12.0"
-  resolved "https://registry.npmjs.org/strapi-plugin-meilisearch/-/strapi-plugin-meilisearch-0.12.0.tgz"
-  integrity sha512-86VFljXhfwtQL8AvBXpvM/IMVgRDPWXZCh3Eg6G/ybSxlbcbODi7/R9XrXoSkC/sSQqscPtradY3XYoTE4QbKg==
-  dependencies:
-    "@strapi/design-system" "^1.18.0"
-    "@strapi/icons" "^1.18.0"
-    "@strapi/utils" "^4.24.0"
-    meilisearch "^0.38.0"
 
 strapi-plugin-menus@^1.6.1:
   version "1.6.1"

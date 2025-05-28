@@ -76,9 +76,6 @@ module.exports = ({ env }) => ({
       },
     },
   },
-  "generate-data": {
-    enabled: false,
-  },
   slugify: {
     enabled: true,
     config: {
@@ -99,52 +96,6 @@ module.exports = ({ env }) => ({
           shouldUpdateSlug: false,
         },
       },
-    },
-  },
-  sitemap: {
-    enabled: true,
-    config: {
-      // cron: '0 0 0 * * *',
-      limit: 45000,
-      xsl: true,
-      autoGenerate: false,
-      caching: true,
-      allowedFields: ["id", "uid", "slug"],
-      excludedTypes: [
-        "api::order.api",
-        "api::order.order",
-        "api::payment.api",
-        "api::payment.payment",
-        "api::header.header",
-        "api::header.api",
-        "api::footer.footer",
-        "api::footer.api",
-        "api::sub-industry.sub-industry",
-        "api::sub-industry.api",
-        "api::product.product",
-        "api::product.api",
-        "api::user.user",
-        "api::user.api",
-      ],
-      // supportedLanguages: ["en", "ja", "es", "fr"], // Add your languages
-      // defaults: {
-      //   // Default transformation for entries
-      //   transform: async (config, entry) => {
-      //     // Generate alternate language URLs
-      //     entry.alternates = config.supportedLanguages.map((lang) => ({
-      //       hreflang: lang,
-      //       href: `${config.hostname}/${lang}${entry.url}`,
-      //     }));
-
-      //     // Add the default language (without prefix)
-      //     entry.alternates.push({
-      //       hreflang: "x-default",
-      //       href: `${config.hostname}${entry.url}`,
-      //     });
-
-      //     return entry;
-      //   },
-      // },
     },
   },
   email: {
